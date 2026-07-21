@@ -1,6 +1,5 @@
 import 'dart:convert';
 import 'package:shared_preferences/shared_preferences.dart';
-import 'package:sqflite/sqflite.dart';
 import 'package:habitos_app/config/config.dart';
 import 'package:habitos_app/domain/datasources/auth_datasource.dart';
 import 'package:habitos_app/domain/entities/user_entity.dart';
