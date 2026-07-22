@@ -96,6 +96,18 @@ class _HabitFormScreenState extends State<HabitFormScreen> {
         reminderTime: reminderDateTime,
       );
       await habitProvider.updateHabit(updated);
+      if (reminderDateTime != null) {
+        await NotificationHelper.scheduleNotification(
+          id: updated.id.hashCode,
+          title: 'Recordatorio',
+          body: '¡Hora de ${updated.name}!',
+          scheduledDate: reminderDateTime!,
+        );
+      } else {
+        await NotificationHelper.cancelNotification(
+          updated.id.hashCode,
+        );
+      }
     } else {
       final habit = HabitEntity(
         id: const Uuid().v4(),
@@ -109,6 +121,14 @@ class _HabitFormScreenState extends State<HabitFormScreen> {
         reminderTime: reminderDateTime,
       );
       await habitProvider.createHabit(habit);
+      if (reminderDateTime != null) {
+        await NotificationHelper.scheduleNotification(
+          id: habit.id.hashCode,
+          title: 'Recordatorio',
+          body: '¡Hora de ${habit.name}!',
+          scheduledDate: reminderDateTime!,
+        );
+      }
     }
 
     if (mounted) context.pop();
