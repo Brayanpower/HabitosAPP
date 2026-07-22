@@ -60,11 +60,8 @@ class AuthProvider extends ChangeNotifier {
     notifyListeners();
 
     try {
-      _user = await _authRepository.register(name, email, password);
-      final token = await _authRepository.getToken();
-      if (token == null) {
-        await _authRepository.saveSession('', _user!);
-      }
+      await _authRepository.register(name, email, password);
+      _user = await _authRepository.login(email, password);
       _status = AuthStatus.authenticated;
     } catch (e) {
       _error = e.toString().replaceFirst('Exception: ', '');
