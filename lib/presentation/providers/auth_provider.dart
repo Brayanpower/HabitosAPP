@@ -15,11 +15,13 @@ class AuthProvider extends ChangeNotifier {
   AuthStatus _status = AuthStatus.initial;
   UserEntity? _user;
   String? _error;
+  bool _registeredSuccessfully = false;
 
   AuthStatus get status => _status;
   UserEntity? get user => _user;
   String? get error => _error;
   bool get isAuthenticated => _status == AuthStatus.authenticated;
+  bool get registeredSuccessfully => _registeredSuccessfully;
 
   Future<void> checkAuthStatus() async {
     _status = AuthStatus.loading;
@@ -57,16 +59,22 @@ class AuthProvider extends ChangeNotifier {
   Future<void> register(String name, String email, String password) async {
     _status = AuthStatus.loading;
     _error = null;
+    _registeredSuccessfully = false;
     notifyListeners();
 
     try {
       await _authRepository.register(name, email, password);
-      _user = await _authRepository.login(email, password);
-      _status = AuthStatus.authenticated;
+      _status = AuthStatus.unauthenticated;
+      _registeredSuccessfully = true;
     } catch (e) {
       _error = e.toString().replaceFirst('Exception: ', '');
       _status = AuthStatus.error;
     }
+    notifyListeners();
+  }
+
+  void clearRegisteredFlag() {
+    _registeredSuccessfully = false;
     notifyListeners();
   }
 
