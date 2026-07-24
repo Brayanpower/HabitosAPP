@@ -14,6 +14,7 @@ void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await initializeDateFormatting('es');
   await NotificationHelper.init();
+  await SeedHelper.seedTestUser();
 
   final authDatasource = AuthLocalDatasource();
   final habitDatasource = HabitLocalDatasource();

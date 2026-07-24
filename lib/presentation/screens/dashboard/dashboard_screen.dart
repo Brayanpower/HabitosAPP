@@ -14,17 +14,29 @@ class DashboardScreen extends StatefulWidget {
 }
 
 class _DashboardScreenState extends State<DashboardScreen> {
+  int _completedToday = 0;
+
   @override
   void initState() {
     super.initState();
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      final authProvider = context.read<AuthProvider>();
-      final habitProvider = context.read<HabitProvider>();
-      if (authProvider.user != null) {
-        habitProvider.setUserId(authProvider.user!.id);
-        habitProvider.loadHabits();
-      }
+      _loadData();
     });
+  }
+
+  Future<void> _loadData() async {
+    final authProvider = context.read<AuthProvider>();
+    final habitProvider = context.read<HabitProvider>();
+    if (authProvider.user != null) {
+      habitProvider.setUserId(authProvider.user!.id);
+      await habitProvider.loadHabits();
+      await _updateCompletedCount(habitProvider);
+    }
+  }
+
+  Future<void> _updateCompletedCount(HabitProvider habitProvider) async {
+    final count = await habitProvider.getCompletedTodayCount();
+    if (mounted) setState(() => _completedToday = count);
   }
 
   @override
@@ -74,12 +86,15 @@ class _DashboardScreenState extends State<DashboardScreen> {
           final habits = habitProvider.todaysHabits;
 
           return RefreshIndicator(
-            onRefresh: () => habitProvider.loadHabits(),
+            onRefresh: () async {
+              await habitProvider.loadHabits();
+              await _updateCompletedCount(habitProvider);
+            },
             child: Column(
               children: [
                 _ProgressCard(
                   totalHabits: habits.length,
-                  completedHabits: 0,
+                  completedHabits: _completedToday,
                 ),
                 Expanded(
                   child: habits.isEmpty
@@ -105,10 +120,15 @@ class _DashboardScreenState extends State<DashboardScreen> {
                                 return HabitTile(
                                   habit: habit,
                                   isCompleted: isCompleted,
-                                  onToggle: () => habitProvider.toggleHabit(
-                                    habit.id,
-                                    today,
-                                  ),
+                                  onToggle: () async {
+                                    await habitProvider.toggleHabit(
+                                      habit.id,
+                                      today,
+                                    );
+                                    await _updateCompletedCount(
+                                      habitProvider,
+                                    );
+                                  },
                                   onTap: () {
                                     habitProvider.selectHabit(habit);
                                     context.push(
