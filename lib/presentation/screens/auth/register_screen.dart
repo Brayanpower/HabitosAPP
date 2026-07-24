@@ -39,25 +39,24 @@ class _RegisterScreenState extends State<RegisterScreen> {
         );
   }
 
-  void _checkRegistrationSuccess(AuthProvider auth) {
-    if (auth.registeredSuccessfully) {
-      auth.clearRegisteredFlag();
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Cuenta creada correctamente. Inicia sesión.'),
-          backgroundColor: AppTheme.success,
-        ),
-      );
-      context.pushReplacement(AppRoutes.login);
-    }
-  }
-
   @override
   Widget build(BuildContext context) {
-    return Consumer<AuthProvider>(
-      builder: (context, auth, _) {
-        _checkRegistrationSuccess(auth);
-        return Scaffold(
+    final auth = context.watch<AuthProvider>();
+    if (auth.registeredSuccessfully) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (!context.mounted) return;
+        auth.clearRegisteredFlag();
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Cuenta creada correctamente. Inicia sesión.'),
+            backgroundColor: AppTheme.success,
+          ),
+        );
+        context.pushReplacement(AppRoutes.login);
+      });
+    }
+
+    return Scaffold(
       body: SafeArea(
         child: Center(
           child: SingleChildScrollView(
@@ -218,8 +217,6 @@ class _RegisterScreenState extends State<RegisterScreen> {
           ),
         ),
       ),
-        );
-      },
     );
   }
 }
