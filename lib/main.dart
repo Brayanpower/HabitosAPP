@@ -22,12 +22,12 @@ void main() async {
   final authRepository = AuthRepositoryImpl(datasource: authDatasource);
   final habitRepository = HabitRepositoryImpl(datasource: habitDatasource);
 
+  final authProvider = AuthProvider(authRepository: authRepository);
+
   runApp(
     MultiProvider(
       providers: [
-        ChangeNotifierProvider(
-          create: (_) => AuthProvider(authRepository: authRepository),
-        ),
+        ChangeNotifierProvider.value(value: authProvider),
         ChangeNotifierProvider(
           create: (_) => HabitProvider(habitRepository: habitRepository),
         ),
@@ -38,6 +38,10 @@ void main() async {
       child: const HabitosApp(),
     ),
   );
+
+  WidgetsBinding.instance.addPostFrameCallback((_) {
+    authProvider.checkAuthStatus();
+  });
 }
 
 class HabitosApp extends StatelessWidget {
