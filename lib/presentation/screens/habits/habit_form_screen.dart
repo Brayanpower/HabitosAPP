@@ -64,6 +64,17 @@ class _HabitFormScreenState extends State<HabitFormScreen> {
       initialTime: _reminderTime ?? TimeOfDay.now(),
     );
     if (time != null) {
+      final exact = await NotificationHelper.hasExactAlarmPermission();
+      if (!exact) {
+        final granted = await NotificationHelper.requestExactAlarmPermission();
+        if (!granted && mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('Ve a Ajustes > Permitir alarmas exactas para recibir notificaciones puntuales'),
+            ),
+          );
+        }
+      }
       setState(() => _reminderTime = time);
     }
   }
