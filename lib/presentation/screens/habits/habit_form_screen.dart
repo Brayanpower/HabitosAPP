@@ -21,6 +21,7 @@ class _HabitFormScreenState extends State<HabitFormScreen> {
   final _nameController = TextEditingController();
   final _descriptionController = TextEditingController();
   HabitFrequency _frequency = HabitFrequency.daily;
+  HabitCategory _category = HabitCategory.otro;
   TimeOfDay? _reminderTime;
   bool _isEditing = false;
   bool _isLoading = true;
@@ -44,6 +45,7 @@ class _HabitFormScreenState extends State<HabitFormScreen> {
           _nameController.text = habit.name;
           _descriptionController.text = habit.description ?? '';
           _frequency = habit.frequency;
+          _category = habit.category;
           if (habit.reminderTime != null) {
             _reminderTime = TimeOfDay.fromDateTime(habit.reminderTime!);
           }
@@ -108,6 +110,7 @@ class _HabitFormScreenState extends State<HabitFormScreen> {
             ? null
             : _descriptionController.text.trim(),
         frequency: _frequency,
+        category: _category,
         reminderTime: reminderDateTime,
       );
       await habitProvider.updateHabit(updated);
@@ -132,6 +135,7 @@ class _HabitFormScreenState extends State<HabitFormScreen> {
             ? null
             : _descriptionController.text.trim(),
         frequency: _frequency,
+        category: _category,
         createdAt: DateTime.now(),
         reminderTime: reminderDateTime,
       );
@@ -221,6 +225,18 @@ class _HabitFormScreenState extends State<HabitFormScreen> {
                     _FrequencySelector(
                       selected: _frequency,
                       onChanged: (f) => setState(() => _frequency = f),
+                    ),
+                    const SizedBox(height: 24),
+                    Text(
+                      'Categoría',
+                      style: Theme.of(context).textTheme.titleSmall?.copyWith(
+                            fontWeight: FontWeight.w600,
+                          ),
+                    ),
+                    const SizedBox(height: 12),
+                    _CategorySelector(
+                      selected: _category,
+                      onChanged: (c) => setState(() => _category = c),
                     ),
                     const SizedBox(height: 24),
                     Text(
@@ -357,6 +373,35 @@ class _FrequencySelector extends StatelessWidget {
           ),
         );
       }).toList(),
+    );
+  }
+}
+
+class _CategorySelector extends StatelessWidget {
+  final HabitCategory selected;
+  final ValueChanged<HabitCategory> onChanged;
+
+  const _CategorySelector({
+    required this.selected,
+    required this.onChanged,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return DropdownButtonFormField<HabitCategory>(
+      initialValue: selected,
+      decoration: const InputDecoration(
+        prefixIcon: Icon(Icons.label_outline),
+      ),
+      items: HabitCategory.values.map((c) {
+        return DropdownMenuItem(
+          value: c,
+          child: Text(c.label),
+        );
+      }).toList(),
+      onChanged: (c) {
+        if (c != null) onChanged(c);
+      },
     );
   }
 }

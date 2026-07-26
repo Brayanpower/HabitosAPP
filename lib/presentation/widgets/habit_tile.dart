@@ -27,6 +27,15 @@ class HabitTile extends StatelessWidget {
           padding: const EdgeInsets.all(16),
           child: Row(
             children: [
+              Container(
+                width: 4,
+                height: 48,
+                decoration: BoxDecoration(
+                  color: _categoryColor(habit.category),
+                  borderRadius: BorderRadius.circular(2),
+                ),
+              ),
+              const SizedBox(width: 12),
               GestureDetector(
                 onTap: onToggle,
                 child: AnimatedContainer(
@@ -125,5 +134,26 @@ class HabitTile extends StatelessWidget {
         ),
       ),
     );
+  }
+
+  Color _categoryColor(HabitCategory category) {
+    switch (category) {
+      case HabitCategory.salud:
+        return Colors.green;
+      case HabitCategory.trabajo:
+        return Colors.blue;
+      case HabitCategory.estudio:
+        return Colors.purple;
+      case HabitCategory.finanzas:
+        return Colors.teal;
+      case HabitCategory.hogar:
+        return Colors.orange;
+      case HabitCategory.social:
+        return Colors.pink;
+      case HabitCategory.ocio:
+        return Colors.amber;
+      case HabitCategory.otro:
+        return Colors.grey;
+    }
   }
 }
