@@ -35,8 +35,12 @@ class _HabitFormScreenState extends State<HabitFormScreen> {
     if (widget.habitId != null) {
       final habitProvider = context.read<HabitProvider>();
       try {
-        final habit = habitProvider.selectedHabit;
-        if (habit != null && habit.id == widget.habitId) {
+        HabitEntity? habit = habitProvider.selectedHabit;
+        if (habit == null || habit.id != widget.habitId) {
+          final habits = habitProvider.habits;
+          habit = habits.where((h) => h.id == widget.habitId).firstOrNull;
+        }
+        if (habit != null) {
           _nameController.text = habit.name;
           _descriptionController.text = habit.description ?? '';
           _frequency = habit.frequency;
@@ -143,6 +147,28 @@ class _HabitFormScreenState extends State<HabitFormScreen> {
     }
 
     if (mounted) context.pop();
+  }
+
+  Future<void> _delete() async {
+    final confirm = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Eliminar hábito'),
+        content: Text('¿Estás seguro de eliminar "${_nameController.text.trim()}"?'),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('Cancelar')),
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, true),
+            style: TextButton.styleFrom(foregroundColor: Colors.red),
+            child: const Text('Eliminar'),
+          ),
+        ],
+      ),
+    );
+    if (confirm == true && widget.habitId != null && mounted) {
+      await context.read<HabitProvider>().deleteHabit(widget.habitId!);
+      if (mounted) context.pop();
+    }
   }
 
   @override
@@ -257,6 +283,18 @@ class _HabitFormScreenState extends State<HabitFormScreen> {
                         style: const TextStyle(fontSize: 16),
                       ),
                     ),
+                    if (_isEditing) ...[
+                      const SizedBox(height: 12),
+                      OutlinedButton.icon(
+                        onPressed: _delete,
+                        style: OutlinedButton.styleFrom(
+                          foregroundColor: Colors.red,
+                          side: const BorderSide(color: Colors.red),
+                        ),
+                        icon: const Icon(Icons.delete_outline),
+                        label: const Text('Eliminar hábito'),
+                      ),
+                    ],
                   ],
                 ),
               ),
