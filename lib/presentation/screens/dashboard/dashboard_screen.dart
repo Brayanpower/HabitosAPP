@@ -130,9 +130,8 @@ class _DashboardScreenState extends State<DashboardScreen> {
                                     );
                                   },
                                   onTap: () {
-                                    habitProvider.selectHabit(habit);
                                     context.push(
-                                      '${AppRoutes.habitForm}?id=${habit.id}',
+                                      '${AppRoutes.habitDetail}?id=${habit.id}',
                                     );
                                   },
                                 );
