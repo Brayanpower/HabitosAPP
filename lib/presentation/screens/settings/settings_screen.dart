@@ -107,6 +107,69 @@ class SettingsScreen extends StatelessWidget {
           ),
           const SizedBox(height: 24),
           Text(
+            'Notificaciones',
+            style: Theme.of(context).textTheme.titleSmall?.copyWith(
+                  fontWeight: FontWeight.bold,
+                  color: AppTheme.textSecondary,
+                ),
+          ),
+          const SizedBox(height: 12),
+          Card(
+            child: Column(
+              children: [
+                ListTile(
+                  leading: const Icon(Icons.notifications_active, color: AppTheme.primaryColor),
+                  title: const Text('Probar notificación'),
+                  subtitle: const Text('Envía una notificación de prueba ahora'),
+                  onTap: () async {
+                    await NotificationHelper.requestNotificationPermission();
+                    final granted = await NotificationHelper.requestExactAlarmPermission();
+                    await NotificationHelper.showAlarmNotification(
+                      id: 999,
+                      title: 'Notificación de prueba',
+                      body: 'Si ves esto, las notificaciones funcionan correctamente',
+                    );
+                    if (context.mounted) {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        SnackBar(
+                          content: Text(granted
+                              ? 'Notificación enviada'
+                              : 'Notificación enviada (permiso de alarma exacta no concedido)'),
+                        ),
+                      );
+                    }
+                  },
+                ),
+                const Divider(height: 1, indent: 16, endIndent: 16),
+                ListTile(
+                  leading: const Icon(Icons.alarm, color: AppTheme.warning),
+                  title: const Text('Agendar en 1 minuto'),
+                  subtitle: const Text('Prueba de notificación programada'),
+                  onTap: () async {
+                    await NotificationHelper.requestNotificationPermission();
+                    final date = DateTime.now().add(const Duration(minutes: 1));
+                    await NotificationHelper.scheduleAlarmNotification(
+                      id: 998,
+                      title: 'Recordatorio programado',
+                      body: 'Esta notificación se programó hace 1 minuto',
+                      scheduledDate: date,
+                    );
+                    if (context.mounted) {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        SnackBar(
+                          content: Text(
+                            'Programada para las ${date.hour.toString().padLeft(2, '0')}:${date.minute.toString().padLeft(2, '0')}',
+                          ),
+                        ),
+                      );
+                    }
+                  },
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(height: 24),
+          Text(
             'Cuenta',
             style: Theme.of(context).textTheme.titleSmall?.copyWith(
                   fontWeight: FontWeight.bold,

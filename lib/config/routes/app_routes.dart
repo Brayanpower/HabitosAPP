@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
 import 'package:habitos_app/presentation/providers/auth_provider.dart';
@@ -22,7 +23,8 @@ class AppRoutes {
   static const String stats = '/stats';
   static const String settings = '/settings';
 
-  static final GoRouter router = GoRouter(
+  static GoRouter router({Listenable? refreshListenable}) => GoRouter(
+    refreshListenable: refreshListenable,
     initialLocation: login,
     redirect: (context, state) {
       final authProvider = context.read<AuthProvider>();

@@ -35,7 +35,7 @@ void main() async {
           create: (_) => ThemeProvider(),
         ),
       ],
-      child: const HabitosApp(),
+      child: HabitosApp(authProvider: authProvider),
     ),
   );
 
@@ -45,7 +45,9 @@ void main() async {
 }
 
 class HabitosApp extends StatelessWidget {
-  const HabitosApp({super.key});
+  final AuthProvider authProvider;
+
+  const HabitosApp({super.key, required this.authProvider});
 
   @override
   Widget build(BuildContext context) {
@@ -57,7 +59,7 @@ class HabitosApp extends StatelessWidget {
       theme: AppTheme.lightTheme,
       darkTheme: AppTheme.darkTheme,
       themeMode: themeProvider.themeMode,
-      routerConfig: AppRoutes.router,
+      routerConfig: AppRoutes.router(refreshListenable: authProvider),
     );
   }
 }
