@@ -263,6 +263,70 @@ class _HabitFormScreenState extends State<HabitFormScreen> {
                     ),
                     const SizedBox(height: 24),
                     Text(
+                      'Meta (opcional)',
+                      style: Theme.of(context).textTheme.titleSmall?.copyWith(
+                            fontWeight: FontWeight.w600,
+                          ),
+                    ),
+                    const SizedBox(height: 12),
+                    CheckboxListTile(
+                      contentPadding: EdgeInsets.zero,
+                      title: const Text('Establecer meta'),
+                      value: _hasGoal,
+                      onChanged: (v) => setState(() => _hasGoal = v ?? false),
+                    ),
+                    if (_hasGoal) ...[
+                      const SizedBox(height: 8),
+                      Row(
+                        children: [
+                          Expanded(
+                            child: TextFormField(
+                              controller: _goalTargetController,
+                              keyboardType: TextInputType.number,
+                              decoration: const InputDecoration(
+                                labelText: 'Completar',
+                                hintText: 'Ej: 20',
+                                prefixIcon: Icon(Icons.flag_outlined),
+                              ),
+                              validator: _hasGoal
+                                  ? (v) {
+                                      if (v == null || v.isEmpty) return 'Requerido';
+                                      final n = int.tryParse(v);
+                                      if (n == null || n <= 0) return 'Número válido';
+                                      return null;
+                                    }
+                                  : null,
+                            ),
+                          ),
+                          const SizedBox(width: 8),
+                          const Padding(
+                            padding: EdgeInsets.only(top: 4),
+                            child: Text('veces en'),
+                          ),
+                          const SizedBox(width: 8),
+                          Expanded(
+                            child: TextFormField(
+                              controller: _goalDaysController,
+                              keyboardType: TextInputType.number,
+                              decoration: const InputDecoration(
+                                labelText: 'días',
+                                hintText: 'Ej: 30',
+                              ),
+                              validator: _hasGoal
+                                  ? (v) {
+                                      if (v == null || v.isEmpty) return 'Requerido';
+                                      final n = int.tryParse(v);
+                                      if (n == null || n <= 0) return 'Número válido';
+                                      return null;
+                                    }
+                                  : null,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ],
+                    const SizedBox(height: 24),
+                    Text(
                       'Recordatorio (opcional)',
                       style: Theme.of(context).textTheme.titleSmall?.copyWith(
                             fontWeight: FontWeight.w600,
