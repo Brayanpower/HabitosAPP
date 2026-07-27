@@ -13,6 +13,9 @@ class HabitModel {
   final int currentStreak;
   final int bestStreak;
 
+  final int? goalTarget;
+  final int? goalDays;
+
   HabitModel({
     required this.id,
     required this.userId,
@@ -25,6 +28,8 @@ class HabitModel {
     this.isActive = true,
     this.currentStreak = 0,
     this.bestStreak = 0,
+    this.goalTarget,
+    this.goalDays,
   });
 
   factory HabitModel.fromEntity(HabitEntity entity) {
@@ -40,6 +45,8 @@ class HabitModel {
       isActive: entity.isActive,
       currentStreak: entity.currentStreak,
       bestStreak: entity.bestStreak,
+      goalTarget: entity.goalTarget,
+      goalDays: entity.goalDays,
     );
   }
 
@@ -58,6 +65,8 @@ class HabitModel {
       isActive: (map['is_active'] as int) == 1,
       currentStreak: map['current_streak'] as int? ?? 0,
       bestStreak: map['best_streak'] as int? ?? 0,
+      goalTarget: map['goal_target'] as int?,
+      goalDays: map['goal_days'] as int?,
     );
   }
 
@@ -74,6 +83,8 @@ class HabitModel {
       'is_active': isActive ? 1 : 0,
       'current_streak': currentStreak,
       'best_streak': bestStreak,
+      'goal_target': goalTarget,
+      'goal_days': goalDays,
     };
   }
 
@@ -96,6 +107,8 @@ class HabitModel {
       isActive: isActive,
       currentStreak: currentStreak,
       bestStreak: bestStreak,
+      goalTarget: goalTarget,
+      goalDays: goalDays,
     );
   }
 }

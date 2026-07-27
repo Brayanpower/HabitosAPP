@@ -30,7 +30,33 @@ class NotificationHelper {
       initSettings,
       onDidReceiveNotificationResponse: _onNotificationTap,
     );
+
+    await _createAlarmChannel();
+    await requestNotificationPermission();
     _initialized = true;
+  }
+
+  static Future<void> _createAlarmChannel() async {
+    final androidPlugin = _plugin.resolvePlatformSpecificImplementation<
+        AndroidFlutterLocalNotificationsPlugin>();
+    if (androidPlugin == null) return;
+    await androidPlugin.createNotificationChannel(
+      const AndroidNotificationChannel(
+        'habits_alarm_channel',
+        'Alertas de hábitos',
+        description: 'Alertas con sonido para recordatorios de hábitos',
+        importance: Importance.max,
+        playSound: true,
+        enableVibration: true,
+      ),
+    );
+  }
+
+  static Future<bool> requestNotificationPermission() async {
+    final androidPlugin = _plugin.resolvePlatformSpecificImplementation<
+        AndroidFlutterLocalNotificationsPlugin>();
+    if (androidPlugin == null) return true;
+    return await androidPlugin.requestNotificationsPermission() ?? false;
   }
 
   static void _onNotificationTap(NotificationResponse response) {}
