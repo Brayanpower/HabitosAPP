@@ -3,7 +3,6 @@ import 'package:provider/provider.dart';
 import 'package:habitos_app/config/config.dart';
 import 'package:habitos_app/presentation/providers/habit_provider.dart';
 import 'package:habitos_app/presentation/widgets/weekly_chart.dart';
-import 'package:habitos_app/presentation/widgets/stats/stats_monthly_chart.dart';
 import 'package:habitos_app/presentation/widgets/stats/stats_category_donut.dart';
 import 'package:habitos_app/presentation/widgets/stats/stats_trend_chart.dart';
 import 'package:habitos_app/presentation/widgets/stats/stats_goal_progress.dart';
@@ -18,7 +17,6 @@ class StatsScreen extends StatefulWidget {
 }
 
 class _StatsScreenState extends State<StatsScreen> {
-  Map<DateTime, int>? _dailyCompletions;
   Map<String, int>? _categoryData;
   Map<DateTime, int>? _trendData;
   Map<int, int>? _weekdayData;
@@ -63,7 +61,6 @@ class _StatsScreenState extends State<StatsScreen> {
 
     if (mounted) {
       setState(() {
-        _dailyCompletions = currentDaily;
         _categoryData = category;
         _trendData = trend;
         _weekdayData = weekday;
@@ -100,13 +97,6 @@ class _StatsScreenState extends State<StatsScreen> {
               _MetricsGrid(habitProvider: habitProvider),
               const SizedBox(height: 24),
               if (activeHabits.isNotEmpty) ...[
-                if (_dailyCompletions != null) ...[
-                  MonthlyBarChart(
-                    dailyCompletions: _dailyCompletions!,
-                    totalHabits: habitProvider.totalActiveHabits,
-                  ),
-                  const SizedBox(height: 16),
-                ],
                 if (_categoryData != null && _categoryData!.isNotEmpty) ...[
                   CategoryDonutChart(categoryData: _categoryData!),
                   const SizedBox(height: 16),

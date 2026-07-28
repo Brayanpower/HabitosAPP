@@ -26,6 +26,7 @@ class _HabitFormScreenState extends State<HabitFormScreen> {
   final _goalTargetController = TextEditingController();
   final _goalDaysController = TextEditingController();
   TimeOfDay? _reminderTime;
+  Set<int> _selectedDays = {};
   bool _isEditing = false;
   bool _isLoading = true;
 
@@ -57,6 +58,7 @@ class _HabitFormScreenState extends State<HabitFormScreen> {
           if (habit.reminderTime != null) {
             _reminderTime = TimeOfDay.fromDateTime(habit.reminderTime!);
           }
+          _selectedDays = habit.repeatDays.toSet();
           _isEditing = true;
         }
       } catch (_) {}
@@ -123,7 +125,9 @@ class _HabitFormScreenState extends State<HabitFormScreen> {
         : null;
 
     if (_isEditing && widget.habitId != null) {
-      final updated = habitProvider.selectedHabit!.copyWith(
+      final habitData = habitProvider.selectedHabit;
+      if (habitData == null) return;
+      final updated = habitData.copyWith(
         name: _nameController.text.trim(),
         description: _descriptionController.text.trim().isEmpty
             ? null
@@ -133,6 +137,7 @@ class _HabitFormScreenState extends State<HabitFormScreen> {
         goalTarget: goalTarget,
         goalDays: goalDays,
         reminderTime: reminderDateTime,
+        repeatDays: _selectedDays.toList(),
       );
       await habitProvider.updateHabit(updated);
       if (reminderDateTime != null) {
@@ -160,6 +165,7 @@ class _HabitFormScreenState extends State<HabitFormScreen> {
         category: _category,
         createdAt: DateTime.now(),
         reminderTime: reminderDateTime,
+        repeatDays: _selectedDays.toList(),
       );
       await habitProvider.createHabit(habit);
       if (reminderDateTime != null) {
@@ -248,6 +254,11 @@ class _HabitFormScreenState extends State<HabitFormScreen> {
                     _FrequencySelector(
                       selected: _frequency,
                       onChanged: (f) => setState(() => _frequency = f),
+                    ),
+                    const SizedBox(height: 16),
+                    _DaySelector(
+                      selectedDays: _selectedDays,
+                      onChanged: (days) => setState(() => _selectedDays = days),
                     ),
                     const SizedBox(height: 24),
                     Text(
@@ -460,6 +471,86 @@ class _FrequencySelector extends StatelessWidget {
           ),
         );
       }).toList(),
+    );
+  }
+}
+
+class _DaySelector extends StatelessWidget {
+  final Set<int> selectedDays;
+  final ValueChanged<Set<int>> onChanged;
+
+  const _DaySelector({
+    required this.selectedDays,
+    required this.onChanged,
+  });
+
+  static const _dayNames = ['L', 'M', 'M', 'J', 'V', 'S', 'D'];
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          'Días de la semana',
+          style: Theme.of(context).textTheme.titleSmall?.copyWith(
+                fontWeight: FontWeight.w600,
+              ),
+        ),
+        const SizedBox(height: 4),
+        Text(
+          selectedDays.isEmpty
+              ? 'Todos los días'
+              : 'Solo los días seleccionados',
+          style: const TextStyle(fontSize: 12, color: AppTheme.textSecondary),
+        ),
+        const SizedBox(height: 8),
+        Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: List.generate(7, (i) {
+            final day = i + 1;
+            final isSelected = selectedDays.contains(day);
+            return GestureDetector(
+              onTap: () {
+                final updated = Set<int>.from(selectedDays);
+                if (isSelected) {
+                  updated.remove(day);
+                } else {
+                  updated.add(day);
+                }
+                onChanged(updated);
+              },
+              child: AnimatedContainer(
+                duration: const Duration(milliseconds: 200),
+                width: 40,
+                height: 40,
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  color: isSelected
+                      ? AppTheme.primaryColor
+                      : Colors.transparent,
+                  border: Border.all(
+                    color: isSelected
+                        ? AppTheme.primaryColor
+                        : AppTheme.borderLight,
+                  ),
+                ),
+                child: Center(
+                  child: Text(
+                    _dayNames[i],
+                    style: TextStyle(
+                      fontWeight:
+                          isSelected ? FontWeight.bold : FontWeight.normal,
+                      color: isSelected ? Colors.white : null,
+                      fontSize: 14,
+                    ),
+                  ),
+                ),
+              ),
+            );
+          }),
+        ),
+      ],
     );
   }
 }
