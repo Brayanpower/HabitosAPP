@@ -26,4 +26,21 @@ abstract class HabitRepository {
   Future<int> getBestStreak(String habitId);
   Future<double> getCompletionRate(String habitId, DateTime start, DateTime end);
   Future<int> getTotalCompletions(String habitId);
+
+  Future<Map<DateTime, int>> getDailyCompletions(
+    String userId,
+    DateTime start,
+    DateTime end,
+  );
+  Future<Map<String, int>> getCompletionsByCategory(
+    String userId,
+    DateTime start,
+    DateTime end,
+  );
+  Future<Map<int, int>> getWeekdayDistribution(
+    String userId,
+    DateTime start,
+    DateTime end,
+  );
+  Future<Map<String, dynamic>> getGoalProgress(String habitId);
 }

@@ -71,61 +71,6 @@ class _CalendarScreenState extends State<CalendarScreen> {
                 habits: habitProvider.habits,
                 habitProvider: habitProvider,
               ),
-              const SizedBox(height: 24),
-              Text(
-                'Hábitos',
-                style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                      fontWeight: FontWeight.bold,
-                    ),
-              ),
-              const SizedBox(height: 12),
-              ...habitProvider.habits.where((h) => h.isActive).map((habit) {
-                return FutureBuilder<int>(
-                  future: habitProvider.getStreak(habit.id),
-                  builder: (context, snapshot) {
-                    final streak = snapshot.data ?? 0;
-                    return Card(
-                      margin: const EdgeInsets.only(bottom: 8),
-                      child: ListTile(
-                        leading: CircleAvatar(
-                          backgroundColor:
-                              AppTheme.primaryColor.withValues(alpha: 0.1),
-                          child: Icon(
-                            Icons.check_circle_outline,
-                            color: streak > 0
-                                ? AppTheme.success
-                                : AppTheme.textSecondary,
-                          ),
-                        ),
-                        title: Text(habit.name),
-                        subtitle: streak > 0
-                            ? Text('Racha: $streak días')
-                            : const Text('Sin racha activa'),
-                        trailing: streak > 0
-                            ? Row(
-                                mainAxisSize: MainAxisSize.min,
-                                children: [
-                                  Icon(
-                                    Icons.local_fire_department,
-                                    color: AppTheme.warning,
-                                    size: 20,
-                                  ),
-                                  const SizedBox(width: 4),
-                                  Text(
-                                    '$streak',
-                                    style: const TextStyle(
-                                      fontWeight: FontWeight.bold,
-                                      fontSize: 16,
-                                    ),
-                                  ),
-                                ],
-                              )
-                            : null,
-                      ),
-                    );
-                  },
-                );
-              }),
             ],
           );
         },
