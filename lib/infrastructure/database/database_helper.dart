@@ -66,17 +66,21 @@ class DatabaseHelper {
 
   static Future<void> _onUpgrade(Database db, int oldVersion, int newVersion) async {
     if (oldVersion < 2) {
-      await db.execute(
-        "ALTER TABLE habits ADD COLUMN category TEXT NOT NULL DEFAULT 'otro'",
-      );
+      try {
+        await db.execute(
+          "ALTER TABLE habits ADD COLUMN category TEXT NOT NULL DEFAULT 'otro'",
+        );
+      } catch (_) {}
     }
     if (oldVersion < 3) {
-      await db.execute(
-        "ALTER TABLE habits ADD COLUMN goal_target INTEGER",
-      );
-      await db.execute(
-        "ALTER TABLE habits ADD COLUMN goal_days INTEGER",
-      );
+      try {
+        await db.execute(
+          "ALTER TABLE habits ADD COLUMN goal_target INTEGER",
+        );
+        await db.execute(
+          "ALTER TABLE habits ADD COLUMN goal_days INTEGER",
+        );
+      } catch (_) {}
     }
   }
 
