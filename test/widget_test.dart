@@ -58,6 +58,8 @@ class MockHabitRepository implements HabitRepository {
   @override
   Future<bool> isHabitCompletedOnDate(String habitId, DateTime date) async => false;
   @override
+  Future<int> getCountForDate(String habitId, DateTime date) async => 0;
+  @override
   Future<List<HabitLogEntity>> getHabitLogs(String habitId) async => [];
   @override
   Future<List<HabitLogEntity>> getLogsByDateRange(String habitId, DateTime start, DateTime end) async => [];

@@ -59,46 +59,51 @@ class HabitLocalDatasource implements HabitDatasource {
     final db = await DatabaseHelper.database;
     final dateStr = DateHelper.formatDate(date);
 
-    final existing = await db.query(
-      'habit_logs',
-      where: 'habit_id = ? AND date = ?',
-      whereArgs: [habitId, dateStr],
-    );
-
-    if (existing.isEmpty) {
-      await db.insert('habit_logs', {
-        'id': _uuid.v4(),
-        'habit_id': habitId,
-        'date': dateStr,
-        'is_completed': 1,
-        'completed_at': DateTime.now().toIso8601String(),
-      });
-      await _updateStreaks(habitId);
-    }
+    await db.insert('habit_logs', {
+      'id': _uuid.v4(),
+      'habit_id': habitId,
+      'date': dateStr,
+      'is_completed': 1,
+      'completed_at': DateTime.now().toIso8601String(),
+    });
+    await _updateStreaks(habitId);
   }
 
   @override
   Future<void> unlogHabit(String habitId, DateTime date) async {
     final db = await DatabaseHelper.database;
     final dateStr = DateHelper.formatDate(date);
-    await db.delete(
+    final rows = await db.query(
       'habit_logs',
-      where: 'habit_id = ? AND date = ?',
+      where: 'habit_id = ? AND date = ? AND is_completed = 1',
       whereArgs: [habitId, dateStr],
+      limit: 1,
     );
+    if (rows.isNotEmpty) {
+      await db.delete(
+        'habit_logs',
+        where: 'id = ?',
+        whereArgs: [rows.first['id']],
+      );
+    }
     await _updateStreaks(habitId);
   }
 
   @override
   Future<bool> isHabitCompletedOnDate(String habitId, DateTime date) async {
+    final count = await getCountForDate(habitId, date);
+    return count > 0;
+  }
+
+  @override
+  Future<int> getCountForDate(String habitId, DateTime date) async {
     final db = await DatabaseHelper.database;
     final dateStr = DateHelper.formatDate(date);
-    final maps = await db.query(
-      'habit_logs',
-      where: 'habit_id = ? AND date = ? AND is_completed = 1',
-      whereArgs: [habitId, dateStr],
+    final result = await db.rawQuery(
+      'SELECT COUNT(*) as count FROM habit_logs WHERE habit_id = ? AND date = ? AND is_completed = 1',
+      [habitId, dateStr],
     );
-    return maps.isNotEmpty;
+    return Sqflite.firstIntValue(result) ?? 0;
   }
 
   @override

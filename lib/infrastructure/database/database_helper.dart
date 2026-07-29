@@ -48,6 +48,7 @@ class DatabaseHelper {
         goal_target INTEGER,
         goal_days INTEGER,
         repeat_days TEXT NOT NULL DEFAULT '',
+        times_per_day INTEGER NOT NULL DEFAULT 1,
         FOREIGN KEY (user_id) REFERENCES users(id)
       )
     ''');
@@ -59,8 +60,7 @@ class DatabaseHelper {
         date TEXT NOT NULL,
         is_completed INTEGER NOT NULL DEFAULT 1,
         completed_at TEXT,
-        FOREIGN KEY (habit_id) REFERENCES habits(id),
-        UNIQUE(habit_id, date)
+        FOREIGN KEY (habit_id) REFERENCES habits(id)
       )
     ''');
   }
@@ -88,6 +88,28 @@ class DatabaseHelper {
         await db.execute(
           "ALTER TABLE habits ADD COLUMN repeat_days TEXT NOT NULL DEFAULT ''",
         );
+      } catch (_) {}
+    }
+    if (oldVersion < 5) {
+      try {
+        await db.execute(
+          "ALTER TABLE habits ADD COLUMN times_per_day INTEGER NOT NULL DEFAULT 1",
+        );
+        await db.execute('''
+          CREATE TABLE habit_logs_v5 (
+            id TEXT PRIMARY KEY,
+            habit_id TEXT NOT NULL,
+            date TEXT NOT NULL,
+            is_completed INTEGER NOT NULL DEFAULT 1,
+            completed_at TEXT,
+            FOREIGN KEY (habit_id) REFERENCES habits(id)
+          )
+        ''');
+        await db.execute(
+          'INSERT INTO habit_logs_v5 SELECT * FROM habit_logs',
+        );
+        await db.execute('DROP TABLE habit_logs');
+        await db.execute('ALTER TABLE habit_logs_v5 RENAME TO habit_logs');
       } catch (_) {}
     }
   }

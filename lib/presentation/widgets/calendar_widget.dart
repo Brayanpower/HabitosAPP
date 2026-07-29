@@ -21,7 +21,7 @@ class CalendarWidget extends StatefulWidget {
 
 class _CalendarWidgetState extends State<CalendarWidget> {
   Map<int, double> _intensity = {};
-  Map<int, Map<String, bool>> _dailyStatus = {};
+  Map<int, Map<String, int>> _dailyCounts = {};
   int _progressDays = 0;
   int _totalDays = 0;
   List<List<int>> _streakRuns = [];
@@ -45,33 +45,52 @@ class _CalendarWidgetState extends State<CalendarWidget> {
     final end = DateTime(widget.month.year, widget.month.month + 1, 0);
     final daysInMonth = end.day;
     final activeHabits = widget.habits.where((h) => h.isActive).toList();
+    final provider = widget.habitProvider;
 
-    final dailyStatus = <int, Map<String, bool>>{};
+    final dailyStatus = <int, Map<String, int>>{};
     final counts = <int, int>{};
+    final totalHabits = <int, int>{};
 
     for (final habit in activeHabits) {
-      final status = await widget.habitProvider.getCompletionStatus(
+      final status = await provider.getCompletionStatus(
         habit.id,
         start,
         end,
       );
       for (final entry in status.entries) {
+        final day = entry.key.day;
+        if (!_isDayAllowed(habit, entry.key.weekday)) continue;
         if (entry.value) {
-          final day = entry.key.day;
+          final count = await provider.getCountForDate(
+            habit.id,
+            entry.key,
+          );
           dailyStatus.putIfAbsent(day, () => {});
-          dailyStatus[day]![habit.id] = true;
+          dailyStatus[day]![habit.id] = count;
           counts[day] = (counts[day] ?? 0) + 1;
+          totalHabits[day] = (totalHabits[day] ?? 0);
         }
       }
     }
 
-    final totalHabits = activeHabits.length;
+    for (final habit in activeHabits) {
+      for (var day = 1; day <= daysInMonth; day++) {
+        final date = DateTime(
+          widget.month.year, widget.month.month, day,
+        );
+        if (_isDayAllowed(habit, date.weekday)) {
+          totalHabits[day] = (totalHabits[day] ?? 0) + 1;
+        }
+      }
+    }
+
     final intensity = <int, double>{};
     int progressDays = 0;
 
     for (var day = 1; day <= daysInMonth; day++) {
       final completed = counts[day] ?? 0;
-      final ratio = totalHabits > 0 ? completed / totalHabits : 0.0;
+      final total = totalHabits[day] ?? 0;
+      final ratio = total > 0 ? completed / total : 0.0;
       intensity[day] = ratio;
       dailyStatus.putIfAbsent(day, () => {});
       if (completed > 0) progressDays++;
@@ -82,12 +101,17 @@ class _CalendarWidgetState extends State<CalendarWidget> {
     if (mounted) {
       setState(() {
         _intensity = intensity;
-        _dailyStatus = dailyStatus;
+        _dailyCounts = dailyStatus;
         _progressDays = progressDays;
         _totalDays = daysInMonth;
         _streakRuns = streakRuns;
       });
     }
+  }
+
+  bool _isDayAllowed(HabitEntity habit, int weekday) {
+    if (!habit.hasCustomDays) return true;
+    return habit.repeatDays.contains(weekday);
   }
 
   List<List<int>> _detectStreaks(Map<int, int> counts, int daysInMonth) {
@@ -126,7 +150,7 @@ class _CalendarWidgetState extends State<CalendarWidget> {
   }
 
   void _showDayDetail(int day) {
-    final statusMap = _dailyStatus[day] ?? {};
+    final statusMap = _dailyCounts[day] ?? {};
     showModalBottomSheet(
       context: context,
       shape: const RoundedRectangleBorder(
@@ -164,8 +188,12 @@ class _CalendarWidgetState extends State<CalendarWidget> {
                 ),
               ),
               const SizedBox(height: 16),
-              ...widget.habits.where((h) => h.isActive).map((habit) {
-                final done = statusMap[habit.id] == true;
+              ...widget.habits.where((h) => h.isActive).where((h) {
+                final date = DateTime(widget.month.year, widget.month.month, day);
+                return _isDayAllowed(h, date.weekday);
+              }).map((habit) {
+                final count = statusMap[habit.id] ?? 0;
+                final done = count > 0;
                 return ListTile(
                   leading: Icon(
                     done ? Icons.check_circle : Icons.cancel_outlined,
@@ -173,6 +201,15 @@ class _CalendarWidgetState extends State<CalendarWidget> {
                     size: 28,
                   ),
                   title: Text(habit.name),
+                  trailing: done && habit.isMultiTimes
+                      ? Text(
+                          '×$count',
+                          style: const TextStyle(
+                            fontWeight: FontWeight.bold,
+                            color: AppTheme.primaryColor,
+                          ),
+                        )
+                      : null,
                   dense: true,
                 );
               }),

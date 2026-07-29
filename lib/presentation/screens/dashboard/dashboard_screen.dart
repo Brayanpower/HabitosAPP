@@ -107,19 +107,29 @@ class _DashboardScreenState extends State<DashboardScreen> {
                             horizontal: AppConstants.padding,
                           ),
                           itemCount: habits.length,
-                          itemBuilder: (context, index) {
+                            itemBuilder: (context, index) {
                             final habit = habits[index];
-                            return FutureBuilder<bool>(
-                              future: habitProvider.isCompletedOnDate(
-                                habit.id,
-                                today,
-                              ),
+                            return FutureBuilder<
+                                Map<String, dynamic>>(
+                              future: Future.wait([
+                                habitProvider.isCompletedOnDate(
+                                    habit.id, today),
+                                habitProvider.getCountForDate(
+                                    habit.id, today),
+                              ]).then((results) => {
+                                    'completed': results[0],
+                                    'count': results[1],
+                                  }),
                               builder: (context, snapshot) {
+                                final data = snapshot.data ??
+                                    {'completed': false, 'count': 0};
                                 final isCompleted =
-                                    snapshot.data ?? false;
+                                    data['completed'] as bool;
+                                final count = data['count'] as int;
                                 return HabitTile(
                                   habit: habit,
                                   isCompleted: isCompleted,
+                                  count: count,
                                   onToggle: () async {
                                     await habitProvider.toggleHabit(
                                       habit.id,
