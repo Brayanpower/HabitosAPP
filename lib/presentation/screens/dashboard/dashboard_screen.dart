@@ -24,6 +24,17 @@ class _DashboardScreenState extends State<DashboardScreen> {
     });
   }
 
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      final provider = context.read<HabitProvider>();
+      if (provider.status == HabitStatus.loaded) {
+        _updateCompletedCount(provider);
+      }
+    });
+  }
+
   Future<void> _loadData() async {
     final authProvider = context.read<AuthProvider>();
     final habitProvider = context.read<HabitProvider>();
