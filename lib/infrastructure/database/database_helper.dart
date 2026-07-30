@@ -121,4 +121,10 @@ class DatabaseHelper {
       _database = null;
     }
   }
+
+  static Future<void> resetDatabase() async {
+    await close();
+    final path = join(await getDatabasesPath(), AppConstants.dbName);
+    await deleteDatabase(path);
+  }
 }

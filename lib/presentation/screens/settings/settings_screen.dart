@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
 import 'package:habitos_app/config/config.dart';
+import 'package:habitos_app/infrastructure/database/database_helper.dart';
 import 'package:habitos_app/presentation/providers/auth_provider.dart';
 import 'package:habitos_app/presentation/providers/theme_provider.dart';
 
@@ -206,6 +207,50 @@ class SettingsScreen extends StatelessWidget {
                 );
                 if (confirmed == true) {
                   await authProvider.logout();
+                  if (context.mounted) context.go(AppRoutes.login);
+                }
+              },
+            ),
+          ),
+          const SizedBox(height: 24),
+          Text(
+            'Datos',
+            style: Theme.of(context).textTheme.titleSmall?.copyWith(
+                  fontWeight: FontWeight.bold,
+                  color: AppTheme.textSecondary,
+                ),
+          ),
+          const SizedBox(height: 12),
+          Card(
+            child: ListTile(
+              leading: const Icon(Icons.delete_sweep, color: AppTheme.error),
+              title: const Text('Borrar todos los datos'),
+              subtitle: const Text('Reinicia la app desde cero'),
+              onTap: () async {
+                final confirmed = await showDialog<bool>(
+                  context: context,
+                  builder: (ctx) => AlertDialog(
+                    title: const Text('Borrar todos los datos'),
+                    content: const Text(
+                      'Se eliminarán todos los hábitos, registros y la sesión. ¿Estás seguro?',
+                    ),
+                    actions: [
+                      TextButton(
+                        onPressed: () => Navigator.pop(ctx, false),
+                        child: const Text('Cancelar'),
+                      ),
+                      TextButton(
+                        onPressed: () => Navigator.pop(ctx, true),
+                        style: TextButton.styleFrom(foregroundColor: Colors.red),
+                        child: const Text('Borrar todo'),
+                      ),
+                    ],
+                  ),
+                );
+                if (confirmed == true) {
+                  await DatabaseHelper.resetDatabase();
+                  await authProvider.logout();
+                  await SeedHelper.seedTestUser();
                   if (context.mounted) context.go(AppRoutes.login);
                 }
               },
