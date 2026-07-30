@@ -104,6 +104,7 @@ class _HabitFormScreenState extends State<HabitFormScreen> {
     DateTime? reminderDateTime;
     if (_reminderTime != null) {
       final now = DateTime.now();
+      final nowRounded = DateTime(now.year, now.month, now.day, now.hour, now.minute);
       var scheduled = DateTime(
         now.year,
         now.month,
@@ -111,7 +112,7 @@ class _HabitFormScreenState extends State<HabitFormScreen> {
         _reminderTime!.hour,
         _reminderTime!.minute,
       );
-      if (scheduled.isBefore(now)) {
+      if (scheduled.isBefore(nowRounded)) {
         scheduled = scheduled.add(const Duration(days: 1));
       }
       reminderDateTime = scheduled;
