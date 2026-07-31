@@ -5,8 +5,9 @@
     <uses-permission android:name="android.permission.SCHEDULE_EXACT_ALARM"/>
     <uses-permission android:name="android.permission.POST_NOTIFICATIONS"/>
     <uses-permission android:name="android.permission.USE_FULL_SCREEN_INTENT"/>
+    <uses-permission android:name="android.permission.ACTIVITY_RECOGNITION"/>
     <application
-        android:label="Habitos App"
+        android:label="VitalHabit"
         android:name="${applicationName}"
         android:icon="@mipmap/ic_launcher">
         <activity
