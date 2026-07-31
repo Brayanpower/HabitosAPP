@@ -17,6 +17,9 @@ class HabitModel {
   final int? goalDays;
   final String repeatDays;
   final int timesPerDay;
+  final String targetType;
+  final int targetValue;
+  final String unit;
 
   HabitModel({
     required this.id,
@@ -34,6 +37,9 @@ class HabitModel {
     this.goalDays,
     this.repeatDays = '',
     this.timesPerDay = 1,
+    this.targetType = 'simpleCheck',
+    this.targetValue = 1,
+    this.unit = 'check',
   });
 
   factory HabitModel.fromEntity(HabitEntity entity) {
@@ -53,6 +59,9 @@ class HabitModel {
       goalDays: entity.goalDays,
       repeatDays: entity.repeatDays.join(','),
       timesPerDay: entity.timesPerDay,
+      targetType: entity.targetType.name,
+      targetValue: entity.targetValue,
+      unit: entity.unit,
     );
   }
 
@@ -75,6 +84,9 @@ class HabitModel {
       goalDays: map['goal_days'] as int?,
       repeatDays: map['repeat_days'] as String? ?? '',
       timesPerDay: map['times_per_day'] as int? ?? 1,
+      targetType: map['target_type'] as String? ?? 'simpleCheck',
+      targetValue: map['target_value'] as int? ?? 1,
+      unit: map['unit'] as String? ?? 'check',
     );
   }
 
@@ -95,6 +107,9 @@ class HabitModel {
       'goal_days': goalDays,
       'repeat_days': repeatDays,
       'times_per_day': timesPerDay,
+      'target_type': targetType,
+      'target_value': targetValue,
+      'unit': unit,
     };
   }
 
@@ -121,8 +136,14 @@ class HabitModel {
       goalDays: goalDays,
       repeatDays: repeatDays.isEmpty
           ? []
-          : repeatDays.split(',').map((s) => int.tryParse(s.trim()) ?? 0).toList(),
+          : repeatDays.split(',').map((s) => int.tryParse(s.trim()) ?? 0).where((d) => d > 0).toList(),
       timesPerDay: timesPerDay,
+      targetType: HabitTargetType.values.firstWhere(
+        (t) => t.name == targetType,
+        orElse: () => HabitTargetType.simpleCheck,
+      ),
+      targetValue: targetValue,
+      unit: unit,
     );
   }
 }

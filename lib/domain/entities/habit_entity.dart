@@ -36,6 +36,59 @@ enum HabitCategory {
   }
 }
 
+enum HabitTargetType {
+  steps,       // Medición de pasos diarios con sensor del dispositivo
+  timer,       // Duración en minutos con temporizador interactivo
+  water,       // Ingesta de agua en ml con acción rápida de vaso (+250ml)
+  counter,     // Contador de repeticiones numéricas (+ / -)
+  simpleCheck; // Verificación binaria (checkbox)
+
+  String get label {
+    switch (this) {
+      case HabitTargetType.steps:
+        return 'Pasos diarios (Sensor)';
+      case HabitTargetType.timer:
+        return 'Tiempo / Temporizador';
+      case HabitTargetType.water:
+        return 'Consumo de Agua';
+      case HabitTargetType.counter:
+        return 'Conteo / Repeticiones';
+      case HabitTargetType.simpleCheck:
+        return 'Check simple';
+    }
+  }
+
+  String get defaultUnit {
+    switch (this) {
+      case HabitTargetType.steps:
+        return 'pasos';
+      case HabitTargetType.timer:
+        return 'minutos';
+      case HabitTargetType.water:
+        return 'ml';
+      case HabitTargetType.counter:
+        return 'veces';
+      case HabitTargetType.simpleCheck:
+        return 'check';
+    }
+  }
+
+  static HabitTargetType fromString(String val) {
+    switch (val.toLowerCase()) {
+      case 'steps':
+        return HabitTargetType.steps;
+      case 'timer':
+        return HabitTargetType.timer;
+      case 'water':
+        return HabitTargetType.water;
+      case 'counter':
+        return HabitTargetType.counter;
+      default:
+        return HabitTargetType.simpleCheck;
+    }
+  }
+}
+
 class HabitEntity {
   final String id;
   final String userId;
@@ -52,6 +105,9 @@ class HabitEntity {
   final int? goalDays;
   final List<int> repeatDays;
   final int timesPerDay;
+  final HabitTargetType targetType;
+  final int targetValue; // pasos, minutos, ml, o veces
+  final String unit;     // 'pasos', 'min', 'ml', 'veces'
 
   HabitEntity({
     required this.id,
@@ -69,10 +125,47 @@ class HabitEntity {
     this.goalDays,
     this.repeatDays = const [],
     this.timesPerDay = 1,
-  });
+    this.targetType = HabitTargetType.simpleCheck,
+    int? targetValue,
+    String? unit,
+  })  : targetValue = targetValue ?? _inferDefaultTargetValue(targetType, timesPerDay),
+        unit = unit ?? targetType.defaultUnit;
+
+  static int _inferDefaultTargetValue(HabitTargetType type, int timesPerDay) {
+    switch (type) {
+      case HabitTargetType.steps:
+        return 8000;
+      case HabitTargetType.timer:
+        return 20;
+      case HabitTargetType.water:
+        return 2000;
+      case HabitTargetType.counter:
+        return timesPerDay > 1 ? timesPerDay : 3;
+      case HabitTargetType.simpleCheck:
+        return 1;
+    }
+  }
 
   bool get hasCustomDays => repeatDays.isNotEmpty;
   bool get isMultiTimes => timesPerDay > 1;
+  bool get isTimerHabit => targetType == HabitTargetType.timer;
+  bool get isWaterHabit => targetType == HabitTargetType.water;
+  bool get isStepsHabit => targetType == HabitTargetType.steps;
+
+  /// Determina si este hábito está programado para una fecha específica
+  bool isScheduledForDate(DateTime date) {
+    if (!isActive) return false;
+    if (frequency == HabitFrequency.monthly) {
+      if (repeatDays.isEmpty) return true;
+      return repeatDays.contains(date.day);
+    } else if (frequency == HabitFrequency.weekly) {
+      if (repeatDays.isEmpty) return true;
+      return repeatDays.contains(date.weekday);
+    } else {
+      // HabitFrequency.daily
+      return true;
+    }
+  }
 
   HabitEntity copyWith({
     String? id,
@@ -90,6 +183,9 @@ class HabitEntity {
     int? goalDays,
     List<int>? repeatDays,
     int? timesPerDay,
+    HabitTargetType? targetType,
+    int? targetValue,
+    String? unit,
   }) {
     return HabitEntity(
       id: id ?? this.id,
@@ -107,6 +203,9 @@ class HabitEntity {
       goalDays: goalDays ?? this.goalDays,
       repeatDays: repeatDays ?? this.repeatDays,
       timesPerDay: timesPerDay ?? this.timesPerDay,
+      targetType: targetType ?? this.targetType,
+      targetValue: targetValue ?? this.targetValue,
+      unit: unit ?? this.unit,
     );
   }
 }

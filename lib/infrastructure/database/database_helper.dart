@@ -28,6 +28,10 @@ class DatabaseHelper {
         name TEXT NOT NULL,
         email TEXT NOT NULL UNIQUE,
         password TEXT NOT NULL,
+        gender TEXT,
+        weight REAL,
+        height REAL,
+        age INTEGER,
         created_at TEXT NOT NULL
       )
     ''');
@@ -49,6 +53,9 @@ class DatabaseHelper {
         goal_days INTEGER,
         repeat_days TEXT NOT NULL DEFAULT '',
         times_per_day INTEGER NOT NULL DEFAULT 1,
+        target_type TEXT NOT NULL DEFAULT 'simpleCheck',
+        target_value INTEGER NOT NULL DEFAULT 1,
+        unit TEXT NOT NULL DEFAULT 'check',
         FOREIGN KEY (user_id) REFERENCES users(id)
       )
     ''');
@@ -110,6 +117,21 @@ class DatabaseHelper {
         );
         await db.execute('DROP TABLE habit_logs');
         await db.execute('ALTER TABLE habit_logs_v5 RENAME TO habit_logs');
+      } catch (_) {}
+    }
+    if (oldVersion < 6) {
+      try {
+        await db.execute("ALTER TABLE users ADD COLUMN gender TEXT");
+        await db.execute("ALTER TABLE users ADD COLUMN weight REAL");
+        await db.execute("ALTER TABLE users ADD COLUMN height REAL");
+        await db.execute("ALTER TABLE users ADD COLUMN age INTEGER");
+      } catch (_) {}
+    }
+    if (oldVersion < 7) {
+      try {
+        await db.execute("ALTER TABLE habits ADD COLUMN target_type TEXT NOT NULL DEFAULT 'simpleCheck'");
+        await db.execute("ALTER TABLE habits ADD COLUMN target_value INTEGER NOT NULL DEFAULT 1");
+        await db.execute("ALTER TABLE habits ADD COLUMN unit TEXT NOT NULL DEFAULT 'check'");
       } catch (_) {}
     }
   }
