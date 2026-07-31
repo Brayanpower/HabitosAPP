@@ -18,6 +18,11 @@ class AuthRepositoryImpl implements AuthRepository {
   }
 
   @override
+  Future<UserEntity> updateUser(UserEntity user) {
+    return datasource.updateUser(user);
+  }
+
+  @override
   Future<void> saveSession(String token, UserEntity user) {
     return datasource.saveSession(token, user);
   }
