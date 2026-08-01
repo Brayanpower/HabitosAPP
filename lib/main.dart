@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:intl/date_symbol_data_local.dart';
 import 'package:provider/provider.dart';
 import 'package:habitos_app/config/config.dart';
+import 'package:habitos_app/config/helpers/wear_sync_service.dart';
 import 'package:habitos_app/infrastructure/datasource/auth_local_datasource.dart';
 import 'package:habitos_app/infrastructure/datasource/habit_local_datasource.dart';
 import 'package:habitos_app/infrastructure/repositories/auth_repository_impl.dart';
@@ -24,14 +25,15 @@ void main() async {
   final habitRepository = HabitRepositoryImpl(datasource: habitDatasource);
 
   final authProvider = AuthProvider(authRepository: authRepository);
+  final habitProvider = HabitProvider(habitRepository: habitRepository);
+  final wearSyncService = WearSyncService();
 
   runApp(
     MultiProvider(
       providers: [
         ChangeNotifierProvider.value(value: authProvider),
-        ChangeNotifierProvider(
-          create: (_) => HabitProvider(habitRepository: habitRepository),
-        ),
+        ChangeNotifierProvider.value(value: habitProvider),
+        ChangeNotifierProvider.value(value: wearSyncService),
         ChangeNotifierProvider(
           create: (_) => StepProvider(),
         ),
@@ -43,8 +45,12 @@ void main() async {
     ),
   );
 
-  WidgetsBinding.instance.addPostFrameCallback((_) {
-    authProvider.checkAuthStatus();
+  WidgetsBinding.instance.addPostFrameCallback((_) async {
+    await authProvider.checkAuthStatus();
+    await wearSyncService.start(
+      habitProvider: habitProvider,
+      authProvider: authProvider,
+    );
   });
 }
 
