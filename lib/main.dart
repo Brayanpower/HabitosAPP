@@ -8,6 +8,7 @@ import 'package:habitos_app/infrastructure/repositories/auth_repository_impl.dar
 import 'package:habitos_app/infrastructure/repositories/habit_repository_impl.dart';
 import 'package:habitos_app/presentation/providers/auth_provider.dart';
 import 'package:habitos_app/presentation/providers/habit_provider.dart';
+import 'package:habitos_app/presentation/providers/step_provider.dart';
 import 'package:habitos_app/presentation/providers/theme_provider.dart';
 
 void main() async {
@@ -30,6 +31,9 @@ void main() async {
         ChangeNotifierProvider.value(value: authProvider),
         ChangeNotifierProvider(
           create: (_) => HabitProvider(habitRepository: habitRepository),
+        ),
+        ChangeNotifierProvider(
+          create: (_) => StepProvider(),
         ),
         ChangeNotifierProvider(
           create: (_) => ThemeProvider(),

@@ -57,7 +57,7 @@ class _CalendarWidgetState extends State<CalendarWidget> {
       final status = await provider.getCompletionStatus(habit.id, start, end);
       for (final entry in status.entries) {
         final day = entry.key.day;
-        if (!_isDayAllowed(habit, entry.key.weekday)) continue;
+        if (!habit.isScheduledForDate(entry.key)) continue;
         if (entry.value) {
           final count = await provider.getCountForDate(habit.id, entry.key);
           dailyStatus.putIfAbsent(day, () => {});
@@ -70,7 +70,7 @@ class _CalendarWidgetState extends State<CalendarWidget> {
     for (final habit in activeHabits) {
       for (var day = 1; day <= daysInMonth; day++) {
         final date = DateTime(widget.month.year, widget.month.month, day);
-        if (_isDayAllowed(habit, date.weekday)) {
+        if (habit.isScheduledForDate(date)) {
           totalHabits[day] = (totalHabits[day] ?? 0) + 1;
         }
       }
@@ -101,9 +101,8 @@ class _CalendarWidgetState extends State<CalendarWidget> {
     }
   }
 
-  bool _isDayAllowed(HabitEntity habit, int weekday) {
-    if (!habit.hasCustomDays) return true;
-    return habit.repeatDays.contains(weekday);
+  bool _isDayAllowed(HabitEntity habit, DateTime date) {
+    return habit.isScheduledForDate(date);
   }
 
   List<List<int>> _detectStreaks(Map<int, int> counts, int daysInMonth) {
@@ -202,7 +201,7 @@ class _CalendarWidgetState extends State<CalendarWidget> {
             ),
             const SizedBox(height: 12),
             ...widget.habits.where((h) => h.isActive).where((h) {
-              return _isDayAllowed(h, date.weekday);
+              return _isDayAllowed(h, date);
             }).map((habit) {
               final count = statusMap[habit.id] ?? 0;
               final done = count > 0;
@@ -226,7 +225,7 @@ class _CalendarWidgetState extends State<CalendarWidget> {
               );
             }),
             if (widget.habits.where((h) => h.isActive).where((h) {
-              return _isDayAllowed(h, date.weekday);
+              return _isDayAllowed(h, date);
             }).isEmpty)
               Padding(
                 padding: const EdgeInsets.symmetric(vertical: 16),
