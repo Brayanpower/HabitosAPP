@@ -37,6 +37,9 @@ class MockAuthRepository implements AuthRepository {
 
   @override
   Future<bool> isAuthenticated() async => false;
+
+  @override
+  Future<UserEntity> updateUser(UserEntity user, {String? newPassword}) async => user;
 }
 
 class MockHabitRepository implements HabitRepository {

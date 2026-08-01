@@ -4,11 +4,9 @@ import 'package:provider/provider.dart';
 import 'package:habitos_app/presentation/providers/auth_provider.dart';
 import 'package:habitos_app/presentation/screens/auth/login_screen.dart';
 import 'package:habitos_app/presentation/screens/auth/register_screen.dart';
-import 'package:habitos_app/presentation/screens/dashboard/dashboard_screen.dart';
+import 'package:habitos_app/presentation/screens/main_navigation_screen.dart';
 import 'package:habitos_app/presentation/screens/habits/habit_detail_screen.dart';
 import 'package:habitos_app/presentation/screens/habits/habit_form_screen.dart';
-import 'package:habitos_app/presentation/screens/calendar/calendar_screen.dart';
-import 'package:habitos_app/presentation/screens/stats/stats_screen.dart';
 import 'package:habitos_app/presentation/screens/settings/settings_screen.dart';
 
 class AppRoutes {
@@ -17,10 +15,12 @@ class AppRoutes {
   static const String login = '/login';
   static const String register = '/register';
   static const String home = '/';
+  static const String habits = '/habits';
+  static const String calendar = '/calendar';
+  static const String profile = '/profile';
+  static const String stats = '/stats';
   static const String habitForm = '/habits/form';
   static const String habitDetail = '/habits/detail';
-  static const String calendar = '/calendar';
-  static const String stats = '/stats';
   static const String settings = '/settings';
 
   static GoRouter router({Listenable? refreshListenable}) => GoRouter(
@@ -50,7 +50,27 @@ class AppRoutes {
       GoRoute(
         path: home,
         name: 'home',
-        builder: (context, state) => const DashboardScreen(),
+        builder: (context, state) => const MainNavigationScreen(initialTab: 0),
+      ),
+      GoRoute(
+        path: habits,
+        name: 'habits',
+        builder: (context, state) => const MainNavigationScreen(initialTab: 1),
+      ),
+      GoRoute(
+        path: calendar,
+        name: 'calendar',
+        builder: (context, state) => const MainNavigationScreen(initialTab: 2),
+      ),
+      GoRoute(
+        path: profile,
+        name: 'profile',
+        builder: (context, state) => const MainNavigationScreen(initialTab: 3),
+      ),
+      GoRoute(
+        path: stats,
+        name: 'stats',
+        builder: (context, state) => const MainNavigationScreen(initialTab: 3),
       ),
       GoRoute(
         path: habitForm,
@@ -67,16 +87,6 @@ class AppRoutes {
           final habitId = state.uri.queryParameters['id'] ?? '';
           return HabitDetailScreen(habitId: habitId);
         },
-      ),
-      GoRoute(
-        path: calendar,
-        name: 'calendar',
-        builder: (context, state) => const CalendarScreen(),
-      ),
-      GoRoute(
-        path: stats,
-        name: 'stats',
-        builder: (context, state) => const StatsScreen(),
       ),
       GoRoute(
         path: settings,
