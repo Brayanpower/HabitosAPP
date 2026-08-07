@@ -2,10 +2,12 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
 import 'package:habitos_app/config/config.dart';
+import 'package:habitos_app/config/helpers/wear_sync_service.dart';
 import 'package:habitos_app/infrastructure/database/database_helper.dart';
 import 'package:habitos_app/presentation/providers/auth_provider.dart';
 import 'package:habitos_app/presentation/providers/step_provider.dart';
 import 'package:habitos_app/presentation/providers/theme_provider.dart';
+import 'package:habitos_app/presentation/widgets/wear_pairing_dialog.dart';
 
 class SettingsScreen extends StatelessWidget {
   const SettingsScreen({super.key});
@@ -17,6 +19,7 @@ class SettingsScreen extends StatelessWidget {
     final authProvider = context.watch<AuthProvider>();
     final themeProvider = context.watch<ThemeProvider>();
     final stepProvider = context.watch<StepProvider>();
+    final wearSyncService = context.watch<WearSyncService>();
 
     return Scaffold(
       appBar: AppBar(
@@ -25,6 +28,54 @@ class SettingsScreen extends StatelessWidget {
       body: ListView(
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
         children: [
+          // Sección: Dispositivo Wearable (Smartwatch)
+          _buildSectionHeader('Reloj Inteligente / Wearable'),
+          Card(
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+            child: Column(
+              children: [
+                ListTile(
+                  leading: Container(
+                    padding: const EdgeInsets.all(8),
+                    decoration: BoxDecoration(
+                      color: AppTheme.primary.withValues(alpha: 0.12),
+                      borderRadius: BorderRadius.circular(10),
+                    ),
+                    child: const Icon(Icons.watch_rounded, color: AppTheme.primary),
+                  ),
+                  title: const Text(
+                    'Vincular Reloj Inteligente',
+                    style: TextStyle(fontWeight: FontWeight.w600),
+                  ),
+                  subtitle: Text(
+                    wearSyncService.isConnected
+                        ? 'Conectado (${wearSyncService.clientCount} reloj activo) • Sincronización en vivo'
+                        : 'Servidor activo (${wearSyncService.localIp}:${wearSyncService.port}) • Toca para ingresar PIN',
+                  ),
+                  trailing: Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                    decoration: BoxDecoration(
+                      color: wearSyncService.isConnected
+                          ? AppTheme.success.withValues(alpha: 0.15)
+                          : Colors.grey.withValues(alpha: 0.15),
+                      borderRadius: BorderRadius.circular(20),
+                    ),
+                    child: Text(
+                      wearSyncService.isConnected ? 'En línea' : 'Desconectado',
+                      style: TextStyle(
+                        fontSize: 11,
+                        fontWeight: FontWeight.bold,
+                        color: wearSyncService.isConnected ? AppTheme.success : Colors.grey,
+                      ),
+                    ),
+                  ),
+                  onTap: () => WearPairingDialog.show(context),
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(height: 20),
+
           // Sección: Sensores & Podómetro
           _buildSectionHeader('Sensores y Podómetro'),
           Card(
