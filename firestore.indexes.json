@@ -1,0 +1,46 @@
+{
+  "indexes": [
+    {
+      "collectionGroup": "habits",
+      "queryScope": "COLLECTION",
+      "fields": [
+        { "fieldPath": "user_id", "order": "ASCENDING" },
+        { "fieldPath": "created_at", "order": "DESCENDING" }
+      ]
+    },
+    {
+      "collectionGroup": "habit_logs",
+      "queryScope": "COLLECTION",
+      "fields": [
+        { "fieldPath": "habit_id", "order": "ASCENDING" },
+        { "fieldPath": "date", "order": "DESCENDING" }
+      ]
+    },
+    {
+      "collectionGroup": "habit_logs",
+      "queryScope": "COLLECTION",
+      "fields": [
+        { "fieldPath": "habit_id", "order": "ASCENDING" },
+        { "fieldPath": "date", "order": "ASCENDING" }
+      ]
+    },
+    {
+      "collectionGroup": "habit_logs",
+      "queryScope": "COLLECTION",
+      "fields": [
+        { "fieldPath": "habit_id", "order": "ASCENDING" },
+        { "fieldPath": "date", "order": "ASCENDING" },
+        { "fieldPath": "is_completed", "order": "ASCENDING" }
+      ]
+    },
+    {
+      "collectionGroup": "habit_logs",
+      "queryScope": "COLLECTION",
+      "fields": [
+        { "fieldPath": "user_id", "order": "ASCENDING" },
+        { "fieldPath": "date", "order": "ASCENDING" }
+      ]
+    }
+  ],
+  "fieldOverrides": []
+}
