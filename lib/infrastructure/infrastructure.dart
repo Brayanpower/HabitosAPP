@@ -1,6 +1,5 @@
-export 'datasource/auth_local_datasource.dart';
-export 'datasource/habit_local_datasource.dart';
-export 'database/database_helper.dart';
+export 'datasource/auth_firebase_datasource.dart';
+export 'datasource/habit_firestore_datasource.dart';
 export 'mappers/habit_mapper.dart';
 export 'mappers/user_mapper.dart';
 export 'models/user_model.dart';

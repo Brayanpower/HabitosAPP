@@ -2,8 +2,6 @@ class AppConstants {
   AppConstants._();
 
   static const String appName = 'VitalHabit';
-  static const String dbName = 'habitos.db';
-  static const int dbVersion = 7;
 
   static const String tokenKey = 'auth_token';
   static const String userKey = 'auth_user';
