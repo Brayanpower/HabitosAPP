@@ -1,10 +1,11 @@
+import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/date_symbol_data_local.dart';
 import 'package:provider/provider.dart';
 import 'package:habitos_app/config/config.dart';
 import 'package:habitos_app/config/helpers/wear_sync_service.dart';
-import 'package:habitos_app/infrastructure/datasource/auth_local_datasource.dart';
-import 'package:habitos_app/infrastructure/datasource/habit_local_datasource.dart';
+import 'package:habitos_app/infrastructure/datasource/auth_firebase_datasource.dart';
+import 'package:habitos_app/infrastructure/datasource/habit_firestore_datasource.dart';
 import 'package:habitos_app/infrastructure/repositories/auth_repository_impl.dart';
 import 'package:habitos_app/infrastructure/repositories/habit_repository_impl.dart';
 import 'package:habitos_app/presentation/providers/auth_provider.dart';
@@ -15,11 +16,11 @@ import 'package:habitos_app/presentation/providers/theme_provider.dart';
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await initializeDateFormatting('es');
+  await Firebase.initializeApp();
   await NotificationHelper.init();
-  await SeedHelper.seedTestUser();
 
-  final authDatasource = AuthLocalDatasource();
-  final habitDatasource = HabitLocalDatasource();
+  final authDatasource = AuthFirebaseDatasource();
+  final habitDatasource = HabitFirestoreDatasource();
 
   final authRepository = AuthRepositoryImpl(datasource: authDatasource);
   final habitRepository = HabitRepositoryImpl(datasource: habitDatasource);
