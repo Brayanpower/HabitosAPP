@@ -3,8 +3,8 @@ import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
 import 'package:habitos_app/config/config.dart';
 import 'package:habitos_app/config/helpers/wear_sync_service.dart';
-import 'package:habitos_app/infrastructure/database/database_helper.dart';
 import 'package:habitos_app/presentation/providers/auth_provider.dart';
+import 'package:habitos_app/presentation/providers/habit_provider.dart';
 import 'package:habitos_app/presentation/providers/step_provider.dart';
 import 'package:habitos_app/presentation/providers/theme_provider.dart';
 import 'package:habitos_app/presentation/widgets/wear_pairing_dialog.dart';
@@ -20,6 +20,7 @@ class SettingsScreen extends StatelessWidget {
     final themeProvider = context.watch<ThemeProvider>();
     final stepProvider = context.watch<StepProvider>();
     final wearSyncService = context.watch<WearSyncService>();
+    final habitProvider = context.watch<HabitProvider>();
 
     return Scaffold(
       appBar: AppBar(
@@ -340,8 +341,8 @@ class SettingsScreen extends StatelessWidget {
           ),
           const SizedBox(height: 20),
 
-          // Sección: Almacenamiento & Datos
-          _buildSectionHeader('Almacenamiento y Base de Datos'),
+          // Sección: Datos en la nube
+          _buildSectionHeader('Datos en la nube'),
           Card(
             shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
             child: ListTile(
@@ -354,17 +355,17 @@ class SettingsScreen extends StatelessWidget {
                 child: const Icon(Icons.delete_sweep_rounded, color: AppTheme.error),
               ),
               title: const Text(
-                'Borrar todos los datos locales',
+                'Borrar todos mis hábitos',
                 style: TextStyle(fontWeight: FontWeight.w600),
               ),
-              subtitle: const Text('Reinicia la base de datos de la app'),
+              subtitle: const Text('Elimina tus hábitos y registros de Firebase'),
               onTap: () async {
                 final confirmed = await showDialog<bool>(
                   context: context,
                   builder: (ctx) => AlertDialog(
-                    title: const Text('¿Borrar todos los datos?'),
+                    title: const Text('¿Borrar todos los hábitos?'),
                     content: const Text(
-                      'Se eliminarán todos los hábitos, registros y usuarios. Esta acción no se puede deshacer.',
+                      'Se eliminarán todos tus hábitos y sus registros de la nube. Esta acción no se puede deshacer.',
                     ),
                     actions: [
                       TextButton(
@@ -382,10 +383,16 @@ class SettingsScreen extends StatelessWidget {
                   ),
                 );
                 if (confirmed == true && context.mounted) {
-                  await DatabaseHelper.resetDatabase();
-                  await authProvider.logout();
-                  await SeedHelper.seedTestUser();
-                  if (context.mounted) context.go(AppRoutes.login);
+                  for (final habit in List.of(habitProvider.habits)) {
+                    await habitProvider.deleteHabit(habit.id);
+                  }
+                  if (context.mounted) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(
+                        content: Text('Todos tus hábitos fueron eliminados'),
+                      ),
+                    );
+                  }
                 }
               },
             ),
