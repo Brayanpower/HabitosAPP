@@ -39,6 +39,7 @@ class HabitProvider extends ChangeNotifier {
       _habits = await _habitRepository.getHabits(_userId!);
       _status = HabitStatus.loaded;
     } catch (e) {
+      debugPrint('[HabitProvider] Error cargando hábitos: $e');
       _error = e.toString();
       _status = HabitStatus.error;
     }
@@ -76,10 +77,7 @@ class HabitProvider extends ChangeNotifier {
   }
 
   Future<void> toggleHabit(String habitId, DateTime date, {String? habitName}) async {
-    final isCompleted = await _habitRepository.isHabitCompletedOnDate(
-      habitId,
-      date,
-    );
+    final isCompleted = await isCompletedOnDate(habitId, date);
 
     if (isCompleted) {
       await _habitRepository.unlogHabit(habitId, date);
@@ -154,6 +152,12 @@ class HabitProvider extends ChangeNotifier {
   }
 
   Future<bool> isCompletedOnDate(String habitId, DateTime date) async {
+    final habit = _habits.where((h) => h.id == habitId).firstOrNull;
+    if (habit != null && habit.isWaterHabit) {
+      final count = await _habitRepository.getCountForDate(habitId, date);
+      final targetMl = habit.targetValue > 0 ? habit.targetValue : 2000;
+      return count * 250 >= targetMl;
+    }
     return _habitRepository.isHabitCompletedOnDate(habitId, date);
   }
 
@@ -231,7 +235,7 @@ class HabitProvider extends ChangeNotifier {
     final today = DateHelper.today();
     int count = 0;
     for (final habit in _habits.where((h) => h.isActive)) {
-      if (await _habitRepository.isHabitCompletedOnDate(habit.id, today)) {
+      if (await isCompletedOnDate(habit.id, today)) {
         count++;
       }
     }
@@ -242,7 +246,7 @@ class HabitProvider extends ChangeNotifier {
     final dayOnly = DateTime(date.year, date.month, date.day);
     int count = 0;
     for (final habit in getHabitsForDate(date)) {
-      if (await _habitRepository.isHabitCompletedOnDate(habit.id, dayOnly)) {
+      if (await isCompletedOnDate(habit.id, dayOnly)) {
         count++;
       }
     }
