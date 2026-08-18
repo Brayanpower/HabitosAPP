@@ -317,8 +317,30 @@ class SettingsScreen extends StatelessWidget {
                     style: TextStyle(fontWeight: FontWeight.w600, color: AppTheme.error),
                   ),
                   onTap: () async {
+                    final confirmed = await showDialog<bool>(
+                      context: context,
+                      builder: (ctx) => AlertDialog(
+                        title: const Text('Cerrar sesión'),
+                        content: const Text('¿Estás seguro de que deseas cerrar tu sesión?'),
+                        actions: [
+                          TextButton(
+                            onPressed: () => Navigator.pop(ctx, false),
+                            child: const Text('Cancelar'),
+                          ),
+                          ElevatedButton(
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: AppTheme.error,
+                            ),
+                            onPressed: () => Navigator.pop(ctx, true),
+                            child: const Text('Cerrar sesión'),
+                          ),
+                        ],
+                      ),
+                    );
+                    if (confirmed == true && context.mounted) {
                     await authProvider.logout();
                     if (context.mounted) context.go(AppRoutes.login);
+                    }
                   },
                 ),
               ],
