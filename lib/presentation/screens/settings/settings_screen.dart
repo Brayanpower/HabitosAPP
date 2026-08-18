@@ -7,6 +7,7 @@ import 'package:habitos_app/presentation/providers/habit_provider.dart';
 import 'package:habitos_app/presentation/providers/step_provider.dart';
 import 'package:habitos_app/presentation/providers/theme_provider.dart';
 import 'package:habitos_app/presentation/widgets/wear_pairing_dialog.dart';
+import 'package:habitos_app/presentation/widgets/tv_pairing_dialog.dart';
 
 class SettingsScreen extends StatelessWidget {
   const SettingsScreen({super.key});
@@ -27,8 +28,8 @@ class SettingsScreen extends StatelessWidget {
       body: ListView(
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
         children: [
-          // Sección: Dispositivo Wearable (Smartwatch)
-          _buildSectionHeader('Reloj Inteligente / Wearable'),
+          // Sección: Dispositivos Vinculados
+          _buildSectionHeader('Dispositivos Vinculados'),
           Card(
             shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
             child: Column(
@@ -54,6 +55,29 @@ class SettingsScreen extends StatelessWidget {
                     color: AppTheme.primary,
                   ),
                   onTap: () => WearPairingDialog.show(context),
+                ),
+                const Divider(height: 1, indent: 16, endIndent: 16),
+                ListTile(
+                  leading: Container(
+                    padding: const EdgeInsets.all(8),
+                    decoration: BoxDecoration(
+                      color: AppTheme.primary.withValues(alpha: 0.12),
+                      borderRadius: BorderRadius.circular(10),
+                    ),
+                    child: const Icon(Icons.tv_rounded, color: AppTheme.primary),
+                  ),
+                  title: const Text(
+                    'Vincular Smart TV',
+                    style: TextStyle(fontWeight: FontWeight.w600),
+                  ),
+                  subtitle: const Text(
+                    'Escanea el QR de la TV para ver tus estadísticas en pantalla grande',
+                  ),
+                  trailing: Icon(
+                    Icons.qr_code_scanner_rounded,
+                    color: AppTheme.primary,
+                  ),
+                  onTap: () => TvPairingDialog.show(context),
                 ),
               ],
             ),

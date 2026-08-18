@@ -5,48 +5,53 @@ import 'package:habitos_app/config/config.dart';
 import 'package:habitos_app/presentation/providers/auth_provider.dart';
 import 'package:habitos_app/presentation/widgets/qr_pairing_scanner.dart';
 
-class WearPairingDialog extends StatefulWidget {
-  const WearPairingDialog({super.key});
+class TvPairingDialog extends StatefulWidget {
+  const TvPairingDialog({super.key});
 
   static Future<void> show(BuildContext context) {
     return showDialog(
       context: context,
-      builder: (ctx) => const WearPairingDialog(),
+      builder: (ctx) => const TvPairingDialog(),
     );
   }
 
   @override
-  State<WearPairingDialog> createState() => _WearPairingDialogState();
+  State<TvPairingDialog> createState() => _TvPairingDialogState();
 }
 
-class _WearPairingDialogState extends State<WearPairingDialog> {
+class _TvPairingDialogState extends State<TvPairingDialog> {
   bool _isSuccess = false;
   String? _errorMessage;
 
   Future<void> _scanQr(AuthProvider authProvider) async {
     final result = await Navigator.of(context).push<DeviceLoginResult>(
-      MaterialPageRoute(builder: (_) => const QrPairingScanner()),
+      MaterialPageRoute(
+        builder: (_) => const QrPairingScanner(
+          expectedPrefix: 'VITALHABIT:TV:',
+          title: 'Escanear QR de la TV',
+          subtitle: 'Apunta la cámara al código QR que muestra tu Smart TV',
+        ),
+      ),
     );
     if (result == null || !mounted) return;
 
     final user = authProvider.user;
     if (user == null) {
       setState(() {
-        _errorMessage = 'Inicia sesión en la app para vincular tu reloj';
+        _errorMessage = 'Inicia sesión en la app para vincular tu TV';
       });
       return;
     }
 
     try {
-      // Escribir la sesión de login del reloj en Firestore
+      // Escribir la sesión de login de la TV en Firestore
       await FirebaseFirestore.instance
-          .collection('wear_sessions')
+          .collection('tv_sessions')
           .doc(result.deviceId)
           .set({
         'userId': user.id,
         'userName': user.name,
-        'token': result.token,
-        'deviceName': 'Wear OS Smartwatch',
+        'deviceName': 'Smart TV',
         'createdAt': FieldValue.serverTimestamp(),
       });
 
@@ -58,7 +63,7 @@ class _WearPairingDialogState extends State<WearPairingDialog> {
 
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: const Text('¡Reloj vinculado! Los hábitos se sincronizarán por Firebase'),
+          content: const Text('¡TV vinculada con éxito!'),
           backgroundColor: AppTheme.success,
           behavior: SnackBarBehavior.floating,
         ),
@@ -72,7 +77,7 @@ class _WearPairingDialogState extends State<WearPairingDialog> {
     } catch (e) {
       if (!mounted) return;
       setState(() {
-        _errorMessage = 'No se pudo vincular el reloj: $e';
+        _errorMessage = 'No se pudo vincular la TV: $e';
       });
     }
   }
@@ -92,7 +97,7 @@ class _WearPairingDialogState extends State<WearPairingDialog> {
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            // Header con Icono de Smartwatch
+            // Header con Icono de TV
             Row(
               children: [
                 Container(
@@ -102,7 +107,7 @@ class _WearPairingDialogState extends State<WearPairingDialog> {
                     shape: BoxShape.circle,
                   ),
                   child: const Icon(
-                    Icons.watch_rounded,
+                    Icons.tv_rounded,
                     color: AppTheme.primary,
                     size: 28,
                   ),
@@ -113,14 +118,14 @@ class _WearPairingDialogState extends State<WearPairingDialog> {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
-                        'Vincular Wearable',
+                        'Vincular Smart TV',
                         style: theme.textTheme.titleMedium?.copyWith(
                           fontWeight: FontWeight.bold,
                         ),
                       ),
                       const SizedBox(height: 2),
                       Text(
-                        'Reloj inteligente Wear OS',
+                        'Televisor / Pantalla Inteligente',
                         style: theme.textTheme.bodySmall?.copyWith(
                           color: isDark ? AppTheme.textSecondaryDark : AppTheme.textSecondaryLight,
                         ),
@@ -138,7 +143,7 @@ class _WearPairingDialogState extends State<WearPairingDialog> {
 
             // Instrucción
             Text(
-              'En el reloj se muestra un código QR. Escanéalo para iniciar sesión y sincronizar tus hábitos por Firebase.',
+              'En la TV se muestra un código QR. Escanéalo para autorizarla y ver tus estadísticas en pantalla grande.',
               style: theme.textTheme.bodyMedium?.copyWith(
                 color: isDark ? AppTheme.textSecondaryDark : AppTheme.textSecondaryLight,
               ),
@@ -154,7 +159,7 @@ class _WearPairingDialogState extends State<WearPairingDialog> {
               const SizedBox(height: 12),
             ],
 
-            // Escanear QR del reloj
+            // Escanear QR de la TV
             FilledButton.icon(
               onPressed: _isSuccess
                   ? null
@@ -166,7 +171,7 @@ class _WearPairingDialogState extends State<WearPairingDialog> {
                       child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
                     )
                   : const Icon(Icons.qr_code_scanner_rounded),
-              label: Text(_isSuccess ? 'Vinculando...' : 'Escanear QR del reloj'),
+              label: Text(_isSuccess ? 'Vinculando...' : 'Escanear QR de la TV'),
               style: FilledButton.styleFrom(
                 backgroundColor: AppTheme.primary,
                 padding: const EdgeInsets.symmetric(vertical: 14),

@@ -1,3 +1,4 @@
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/foundation.dart';
 import 'package:habitos_app/domain/entities/user_entity.dart';
 import 'package:habitos_app/domain/repositories/auth_repository.dart';
@@ -105,6 +106,18 @@ class AuthProvider extends ChangeNotifier {
   }
 
   Future<void> logout() async {
+    if (_user != null) {
+      try {
+        final tvSessions = await FirebaseFirestore.instance.collection('tv_sessions').where('userId', isEqualTo: _user!.id).get();
+        for (var doc in tvSessions.docs) {
+          await doc.reference.delete();
+        }
+        final wearSessions = await FirebaseFirestore.instance.collection('wear_sessions').where('userId', isEqualTo: _user!.id).get();
+        for (var doc in wearSessions.docs) {
+          await doc.reference.delete();
+        }
+      } catch (_) {}
+    }
     await _authRepository.logout();
     _user = null;
     _status = AuthStatus.unauthenticated;

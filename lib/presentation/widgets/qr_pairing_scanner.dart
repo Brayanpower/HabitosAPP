@@ -1,15 +1,24 @@
 import 'package:flutter/material.dart';
 import 'package:mobile_scanner/mobile_scanner.dart';
 
-class WearLoginResult {
+class DeviceLoginResult {
   final String deviceId;
-  final String token;
+  final String? token;
 
-  const WearLoginResult({required this.deviceId, required this.token});
+  const DeviceLoginResult({required this.deviceId, this.token});
 }
 
 class QrPairingScanner extends StatefulWidget {
-  const QrPairingScanner({super.key});
+  final String expectedPrefix;
+  final String title;
+  final String subtitle;
+
+  const QrPairingScanner({
+    super.key,
+    this.expectedPrefix = 'VITALHABIT:LOGIN:',
+    this.title = 'Escanear QR del reloj',
+    this.subtitle = 'Apunta la cámara al código QR que muestra tu reloj',
+  });
 
   @override
   State<QrPairingScanner> createState() => _QrPairingScannerState();
@@ -31,14 +40,14 @@ class _QrPairingScannerState extends State<QrPairingScanner> {
       final raw = barcode.rawValue;
       if (raw == null || raw.isEmpty) continue;
 
-      // Formato esperado: VITALHABIT:LOGIN:<deviceId>:<token>
-      if (raw.startsWith('VITALHABIT:LOGIN:')) {
-        final parts = raw.substring('VITALHABIT:LOGIN:'.length).split(':');
-        if (parts.length == 2 && parts[0].isNotEmpty && parts[1].isNotEmpty) {
+      if (raw.startsWith(widget.expectedPrefix)) {
+        final payload = raw.substring(widget.expectedPrefix.length);
+        final parts = payload.split(':');
+        if (parts.isNotEmpty && parts[0].isNotEmpty) {
           _handled = true;
-          Navigator.of(context).pop(WearLoginResult(
+          Navigator.of(context).pop(DeviceLoginResult(
             deviceId: parts[0],
-            token: parts[1],
+            token: parts.length > 1 ? parts[1] : null,
           ));
           return;
         }
@@ -51,7 +60,7 @@ class _QrPairingScannerState extends State<QrPairingScanner> {
     return Scaffold(
       backgroundColor: Colors.black,
       appBar: AppBar(
-        title: const Text('Escanear QR del reloj'),
+        title: Text(widget.title),
         leading: IconButton(
           icon: const Icon(Icons.close_rounded),
           onPressed: () => Navigator.of(context).pop(),
@@ -63,14 +72,14 @@ class _QrPairingScannerState extends State<QrPairingScanner> {
             controller: _controller,
             onDetect: _handleBarcode,
           ),
-          const Align(
+          Align(
             alignment: Alignment.bottomCenter,
             child: Padding(
-              padding: EdgeInsets.all(24),
+              padding: const EdgeInsets.all(24),
               child: Text(
-                'Apunta la cámara al código QR que muestra tu reloj',
+                widget.subtitle,
                 textAlign: TextAlign.center,
-                style: TextStyle(color: Colors.white, fontSize: 13),
+                style: const TextStyle(color: Colors.white, fontSize: 13),
               ),
             ),
           ),
