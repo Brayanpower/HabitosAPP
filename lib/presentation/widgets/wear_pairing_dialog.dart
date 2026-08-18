@@ -1,8 +1,9 @@
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 import 'package:habitos_app/config/config.dart';
-import 'package:habitos_app/config/helpers/wear_sync_service.dart';
+import 'package:habitos_app/presentation/providers/auth_provider.dart';
+import 'package:habitos_app/presentation/widgets/qr_pairing_scanner.dart';
 
 class WearPairingDialog extends StatefulWidget {
   const WearPairingDialog({super.key});
@@ -19,52 +20,68 @@ class WearPairingDialog extends StatefulWidget {
 }
 
 class _WearPairingDialogState extends State<WearPairingDialog> {
-  final TextEditingController _pinController = TextEditingController();
   bool _isSuccess = false;
   String? _errorMessage;
 
-  @override
-  void dispose() {
-    _pinController.dispose();
-    super.dispose();
-  }
+  Future<void> _scanQr(AuthProvider authProvider) async {
+    final result = await Navigator.of(context).push<WearLoginResult>(
+      MaterialPageRoute(builder: (_) => const QrPairingScanner()),
+    );
+    if (result == null || !mounted) return;
 
-  void _submitPin(WearSyncService syncService) {
-    final pin = _pinController.text.trim();
-    if (pin.length < 4) {
+    final user = authProvider.user;
+    if (user == null) {
       setState(() {
-        _errorMessage = 'Ingresa el código PIN de 4 dígitos';
+        _errorMessage = 'Inicia sesión en la app para vincular tu reloj';
       });
       return;
     }
 
-    setState(() {
-      _errorMessage = null;
-      _isSuccess = true;
-    });
+    try {
+      // Escribir la sesión de login del reloj en Firestore
+      await FirebaseFirestore.instance
+          .collection('wear_sessions')
+          .doc(result.deviceId)
+          .set({
+        'userId': user.id,
+        'userName': user.name,
+        'token': result.token,
+        'deviceName': 'Wear OS Smartwatch',
+        'createdAt': FieldValue.serverTimestamp(),
+      });
 
-    syncService.confirmPairing(pin);
+      if (!mounted) return;
+      setState(() {
+        _errorMessage = null;
+        _isSuccess = true;
+      });
 
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text('¡PIN $pin confirmado! Sincronizando con el reloj...'),
-        backgroundColor: AppTheme.success,
-        behavior: SnackBarBehavior.floating,
-      ),
-    );
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: const Text('¡Reloj vinculado! Los hábitos se sincronizarán por Firebase'),
+          backgroundColor: AppTheme.success,
+          behavior: SnackBarBehavior.floating,
+        ),
+      );
 
-    Future.delayed(const Duration(milliseconds: 900), () {
-      if (mounted) {
-        Navigator.of(context).pop();
-      }
-    });
+      Future.delayed(const Duration(milliseconds: 900), () {
+        if (mounted) {
+          Navigator.of(context).pop();
+        }
+      });
+    } catch (e) {
+      if (!mounted) return;
+      setState(() {
+        _errorMessage = 'No se pudo vincular el reloj: $e';
+      });
+    }
   }
 
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final isDark = theme.brightness == Brightness.dark;
-    final syncService = context.watch<WearSyncService>();
+    final authProvider = context.watch<AuthProvider>();
 
     return Dialog(
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
@@ -119,139 +136,37 @@ class _WearPairingDialogState extends State<WearPairingDialog> {
             ),
             const SizedBox(height: 20),
 
-            // Estado de Conexión del Servidor
-            Container(
-              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
-              decoration: BoxDecoration(
-                color: syncService.isConnected
-                    ? AppTheme.success.withValues(alpha: 0.12)
-                    : (isDark ? AppTheme.borderDark : Colors.grey.shade100),
-                borderRadius: BorderRadius.circular(14),
-                border: Border.all(
-                  color: syncService.isConnected
-                      ? AppTheme.success.withValues(alpha: 0.3)
-                      : (isDark ? AppTheme.borderDark : AppTheme.borderLight),
-                ),
-              ),
-              child: Row(
-                children: [
-                  Icon(
-                    syncService.isConnected ? Icons.wifi_tethering : Icons.wifi_tethering_off,
-                    color: syncService.isConnected ? AppTheme.success : Colors.grey,
-                    size: 20,
-                  ),
-                  const SizedBox(width: 10),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          syncService.isConnected
-                              ? 'Reloj Conectado (${syncService.clientCount})'
-                              : 'Esperando conexión del reloj',
-                          style: TextStyle(
-                            fontSize: 13,
-                            fontWeight: FontWeight.w600,
-                            color: syncService.isConnected ? AppTheme.success : null,
-                          ),
-                        ),
-                        Text(
-                          'Servidor: ${syncService.localIp}:${syncService.port}',
-                          style: TextStyle(
-                            fontSize: 11,
-                            color: isDark ? AppTheme.textSecondaryDark : AppTheme.textSecondaryLight,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                  if (syncService.isConnected)
-                    IconButton(
-                      icon: const Icon(Icons.sync_rounded, size: 20, color: AppTheme.primary),
-                      tooltip: 'Sincronizar ahora',
-                      onPressed: () {
-                        syncService.broadcastHabits();
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          const SnackBar(
-                            content: Text('Hábitos sincronizados con el reloj'),
-                            duration: Duration(seconds: 1),
-                          ),
-                        );
-                      },
-                    ),
-                ],
-              ),
-            ),
-            const SizedBox(height: 20),
-
-            // Instrucción y Campo de PIN
+            // Instrucción
             Text(
-              'Ingresa el código PIN de 4 dígitos que aparece en la pantalla de tu reloj:',
+              'En el reloj se muestra un código QR. Escanéalo para iniciar sesión y sincronizar tus hábitos por Firebase.',
               style: theme.textTheme.bodyMedium?.copyWith(
                 color: isDark ? AppTheme.textSecondaryDark : AppTheme.textSecondaryLight,
               ),
             ),
-            const SizedBox(height: 14),
-
-            TextField(
-              controller: _pinController,
-              keyboardType: TextInputType.number,
-              textAlign: TextAlign.center,
-              maxLength: 4,
-              inputFormatters: [
-                FilteringTextInputFormatter.digitsOnly,
-                LengthLimitingTextInputFormatter(4),
-              ],
-              style: const TextStyle(
-                fontSize: 28,
-                fontWeight: FontWeight.bold,
-                letterSpacing: 12,
-              ),
-              decoration: InputDecoration(
-                counterText: '',
-                hintText: '0000',
-                hintStyle: TextStyle(
-                  color: Colors.grey.withValues(alpha: 0.4),
-                  letterSpacing: 12,
-                ),
-                contentPadding: const EdgeInsets.symmetric(vertical: 14),
-                filled: true,
-                fillColor: isDark ? Colors.black26 : Colors.grey.shade50,
-                border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(16),
-                  borderSide: BorderSide(
-                    color: isDark ? AppTheme.borderDark : AppTheme.borderLight,
-                  ),
-                ),
-                focusedBorder: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(16),
-                  borderSide: const BorderSide(color: AppTheme.primary, width: 2),
-                ),
-              ),
-            ),
+            const SizedBox(height: 20),
 
             if (_errorMessage != null) ...[
-              const SizedBox(height: 8),
               Text(
                 _errorMessage!,
                 textAlign: TextAlign.center,
                 style: const TextStyle(color: AppTheme.error, fontSize: 12),
               ),
+              const SizedBox(height: 12),
             ],
 
-            const SizedBox(height: 22),
-
-            // Botón de Confirmación
+            // Escanear QR del reloj
             FilledButton.icon(
-              onPressed: _isSuccess ? null : () => _submitPin(syncService),
+              onPressed: _isSuccess
+                  ? null
+                  : () => _scanQr(authProvider),
               icon: _isSuccess
                   ? const SizedBox(
                       width: 18,
                       height: 18,
                       child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
                     )
-                  : const Icon(Icons.link_rounded),
-              label: Text(_isSuccess ? 'Vinculando...' : 'Vincular Reloj'),
+                  : const Icon(Icons.qr_code_scanner_rounded),
+              label: Text(_isSuccess ? 'Vinculando...' : 'Escanear QR del reloj'),
               style: FilledButton.styleFrom(
                 backgroundColor: AppTheme.primary,
                 padding: const EdgeInsets.symmetric(vertical: 14),
