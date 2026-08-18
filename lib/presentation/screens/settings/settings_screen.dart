@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
 import 'package:habitos_app/config/config.dart';
-import 'package:habitos_app/config/helpers/wear_sync_service.dart';
 import 'package:habitos_app/presentation/providers/auth_provider.dart';
 import 'package:habitos_app/presentation/providers/habit_provider.dart';
 import 'package:habitos_app/presentation/providers/step_provider.dart';
@@ -19,7 +18,6 @@ class SettingsScreen extends StatelessWidget {
     final authProvider = context.watch<AuthProvider>();
     final themeProvider = context.watch<ThemeProvider>();
     final stepProvider = context.watch<StepProvider>();
-    final wearSyncService = context.watch<WearSyncService>();
     final habitProvider = context.watch<HabitProvider>();
 
     return Scaffold(
@@ -48,27 +46,12 @@ class SettingsScreen extends StatelessWidget {
                     'Vincular Reloj Inteligente',
                     style: TextStyle(fontWeight: FontWeight.w600),
                   ),
-                  subtitle: Text(
-                    wearSyncService.isConnected
-                        ? 'Conectado (${wearSyncService.clientCount} reloj activo) • Sincronización en vivo'
-                        : 'Servidor activo (${wearSyncService.localIp}:${wearSyncService.port}) • Toca para ingresar PIN',
+                  subtitle: const Text(
+                    'Escanea el QR del reloj para iniciar sesión y sincronizar por Firebase',
                   ),
-                  trailing: Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                    decoration: BoxDecoration(
-                      color: wearSyncService.isConnected
-                          ? AppTheme.success.withValues(alpha: 0.15)
-                          : Colors.grey.withValues(alpha: 0.15),
-                      borderRadius: BorderRadius.circular(20),
-                    ),
-                    child: Text(
-                      wearSyncService.isConnected ? 'En línea' : 'Desconectado',
-                      style: TextStyle(
-                        fontSize: 11,
-                        fontWeight: FontWeight.bold,
-                        color: wearSyncService.isConnected ? AppTheme.success : Colors.grey,
-                      ),
-                    ),
+                  trailing: Icon(
+                    Icons.qr_code_scanner_rounded,
+                    color: AppTheme.primary,
                   ),
                   onTap: () => WearPairingDialog.show(context),
                 ),
