@@ -1,6 +1,7 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart' as fa;
 import 'package:habitos_app/config/helpers/seed_helper.dart';
+import 'package:habitos_app/config/helpers/firebase_error_helper.dart';
 import 'package:habitos_app/domain/datasources/auth_datasource.dart';
 import 'package:habitos_app/domain/entities/user_entity.dart';
 import 'package:habitos_app/infrastructure/models/user_model.dart';
@@ -28,8 +29,8 @@ class AuthFirebaseDatasource implements AuthDatasource {
       }
       await SeedHelper.seedStepHabitForUser(user.id);
       return user;
-    } on fa.FirebaseAuthException catch (e) {
-      throw Exception(_authErrorMessage(e));
+    } catch (e) {
+      throw Exception(FirebaseErrorHelper.translate(e));
     }
   }
 
@@ -64,29 +65,33 @@ class AuthFirebaseDatasource implements AuthDatasource {
       await _auth.signOut();
 
       return user;
-    } on fa.FirebaseAuthException catch (e) {
-      throw Exception(_authErrorMessage(e));
+    } catch (e) {
+      throw Exception(FirebaseErrorHelper.translate(e));
     }
   }
 
   @override
   Future<UserEntity> updateUser(UserEntity user) async {
-    await _firestore
-        .collection('users')
-        .doc(user.id)
-        .set(UserModel.fromEntity(user).toMap(), SetOptions(merge: true));
+    try {
+      await _firestore
+          .collection('users')
+          .doc(user.id)
+          .set(UserModel.fromEntity(user).toMap(), SetOptions(merge: true));
 
-    final currentUser = _auth.currentUser;
-    if (currentUser != null) {
-      if (currentUser.displayName != user.name) {
-        await currentUser.updateDisplayName(user.name);
+      final currentUser = _auth.currentUser;
+      if (currentUser != null) {
+        if (currentUser.displayName != user.name) {
+          await currentUser.updateDisplayName(user.name);
+        }
+        final password = user.password;
+        if (password != null && password.isNotEmpty) {
+          await currentUser.updatePassword(password);
+        }
       }
-      final password = user.password;
-      if (password != null && password.isNotEmpty) {
-        await currentUser.updatePassword(password);
-      }
+      return user;
+    } catch (e) {
+      throw Exception(FirebaseErrorHelper.translate(e));
     }
-    return user;
   }
 
   @override
@@ -117,29 +122,12 @@ class AuthFirebaseDatasource implements AuthDatasource {
   }
 
   Future<UserEntity?> _getUserFromFirestore(String uid) async {
-    final doc = await _firestore.collection('users').doc(uid).get();
-    if (!doc.exists) return null;
-    return UserModel.fromMap(doc.data()!).toEntity();
-  }
-
-  String _authErrorMessage(fa.FirebaseAuthException e) {
-    switch (e.code) {
-      case 'invalid-credential':
-      case 'wrong-password':
-      case 'user-not-found':
-        return 'Credenciales inválidas';
-      case 'invalid-email':
-        return 'Email inválido';
-      case 'email-already-in-use':
-        return 'El email ya está registrado';
-      case 'weak-password':
-        return 'La contraseña debe tener al menos 6 caracteres';
-      case 'user-disabled':
-        return 'La cuenta ha sido deshabilitada';
-      case 'network-request-failed':
-        return 'Error de conexión. Verifica tu internet e inténtalo de nuevo';
-      default:
-        return 'Error: ${e.message ?? e.code}';
+    try {
+      final doc = await _firestore.collection('users').doc(uid).get();
+      if (!doc.exists) return null;
+      return UserModel.fromMap(doc.data()!).toEntity();
+    } catch (e) {
+      throw Exception(FirebaseErrorHelper.translate(e));
     }
   }
 }

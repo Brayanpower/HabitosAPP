@@ -5,6 +5,7 @@ import 'package:habitos_app/domain/entities/habit_entity.dart';
 import 'package:habitos_app/domain/entities/habit_log_entity.dart';
 import 'package:habitos_app/infrastructure/models/habit_log_model.dart';
 import 'package:habitos_app/infrastructure/models/habit_model.dart';
+import 'package:habitos_app/config/helpers/firebase_error_helper.dart';
 
 class HabitFirestoreDatasource implements HabitDatasource {
   final FirebaseFirestore _firestore;
@@ -38,57 +39,77 @@ class HabitFirestoreDatasource implements HabitDatasource {
 
   @override
   Future<HabitEntity> createHabit(HabitEntity habit) async {
-    await _habits
-        .doc(habit.id)
-        .set(HabitModel.fromEntity(habit).toMap());
-    return habit;
+    try {
+      await _habits
+          .doc(habit.id)
+          .set(HabitModel.fromEntity(habit).toMap());
+      return habit;
+    } catch (e) {
+      throw Exception(FirebaseErrorHelper.translate(e));
+    }
   }
 
   @override
   Future<HabitEntity> updateHabit(HabitEntity habit) async {
-    await _habits
-        .doc(habit.id)
-        .set(HabitModel.fromEntity(habit).toMap(), SetOptions(merge: true));
-    return habit;
+    try {
+      await _habits
+          .doc(habit.id)
+          .set(HabitModel.fromEntity(habit).toMap(), SetOptions(merge: true));
+      return habit;
+    } catch (e) {
+      throw Exception(FirebaseErrorHelper.translate(e));
+    }
   }
 
   @override
   Future<void> deleteHabit(String id) async {
-    final logs = await _logs.where('habit_id', isEqualTo: id).get();
-    final batch = _firestore.batch();
-    for (final doc in logs.docs) {
-      batch.delete(doc.reference);
+    try {
+      final logs = await _logs.where('habit_id', isEqualTo: id).get();
+      final batch = _firestore.batch();
+      for (final doc in logs.docs) {
+        batch.delete(doc.reference);
+      }
+      batch.delete(_habits.doc(id));
+      await batch.commit();
+    } catch (e) {
+      throw Exception(FirebaseErrorHelper.translate(e));
     }
-    batch.delete(_habits.doc(id));
-    await batch.commit();
   }
 
   @override
   Future<void> logHabit(String habitId, DateTime date) async {
-    final userId = await _userIdForHabit(habitId);
-    await _logs.add({
-      'habit_id': habitId,
-      'user_id': userId,
-      'date': DateHelper.formatDate(date),
-      'is_completed': 1,
-      'completed_at': DateTime.now().toIso8601String(),
-    });
-    await _updateStreaks(habitId);
+    try {
+      final userId = await _userIdForHabit(habitId);
+      await _logs.add({
+        'habit_id': habitId,
+        'user_id': userId,
+        'date': DateHelper.formatDate(date),
+        'is_completed': 1,
+        'completed_at': DateTime.now().toIso8601String(),
+      });
+      await _updateStreaks(habitId);
+    } catch (e) {
+      throw Exception(FirebaseErrorHelper.translate(e));
+    }
   }
 
   @override
   Future<void> unlogHabit(String habitId, DateTime date) async {
-    final snapshot = await _logs
-        .where('habit_id', isEqualTo: habitId)
-        .where('date', isEqualTo: DateHelper.formatDate(date))
-        .where('is_completed', isEqualTo: 1)
-        .limit(1)
-        .get();
+    try {
+      final snapshot = await _logs
+          .where('habit_id', isEqualTo: habitId)
+          .where('date', isEqualTo: DateHelper.formatDate(date))
+          .where('is_completed', isEqualTo: 1)
+          .limit(1)
+          .get();
 
-    if (snapshot.docs.isNotEmpty) {
-      await snapshot.docs.first.reference.delete();
+      if (snapshot.docs.isNotEmpty) {
+        await snapshot.docs.first.reference.delete();
+      }
+      await _updateStreaks(habitId);
+    } catch (e) {
+      throw Exception(FirebaseErrorHelper.translate(e));
     }
-    await _updateStreaks(habitId);
   }
 
   @override
