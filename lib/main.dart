@@ -11,6 +11,7 @@ import 'package:habitos_app/presentation/providers/theme_provider.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
+  await NotificationHelper.init();
 
   final authDatasource = AuthLocalDatasource();
   final habitDatasource = HabitLocalDatasource();
