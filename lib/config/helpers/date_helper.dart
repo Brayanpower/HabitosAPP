@@ -46,7 +46,6 @@ class DateHelper {
   }
 
   static List<DateTime> getCurrentMonthDays(DateTime month) {
-    final first = DateTime(month.year, month.month, 1);
     final last = DateTime(month.year, month.month + 1, 0);
     final days = <DateTime>[];
     for (var day = 1; day <= last.day; day++) {

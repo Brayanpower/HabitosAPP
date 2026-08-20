@@ -1,4 +1,13 @@
 import 'package:go_router/go_router.dart';
+import 'package:provider/provider.dart';
+import 'package:habitos_app/presentation/providers/auth_provider.dart';
+import 'package:habitos_app/presentation/screens/auth/login_screen.dart';
+import 'package:habitos_app/presentation/screens/auth/register_screen.dart';
+import 'package:habitos_app/presentation/screens/dashboard/dashboard_screen.dart';
+import 'package:habitos_app/presentation/screens/habits/habit_form_screen.dart';
+import 'package:habitos_app/presentation/screens/calendar/calendar_screen.dart';
+import 'package:habitos_app/presentation/screens/stats/stats_screen.dart';
+import 'package:habitos_app/presentation/screens/settings/settings_screen.dart';
 
 class AppRoutes {
   AppRoutes._();
@@ -6,8 +15,6 @@ class AppRoutes {
   static const String login = '/login';
   static const String register = '/register';
   static const String home = '/';
-  static const String dashboard = '/dashboard';
-  static const String habits = '/habits';
   static const String habitForm = '/habits/form';
   static const String calendar = '/calendar';
   static const String stats = '/stats';
@@ -15,60 +22,55 @@ class AppRoutes {
 
   static final GoRouter router = GoRouter(
     initialLocation: login,
+    redirect: (context, state) {
+      final authProvider = context.read<AuthProvider>();
+      final isAuth = authProvider.isAuthenticated;
+      final isAuthRoute = state.matchedLocation == login ||
+          state.matchedLocation == register;
+
+      if (!isAuth && !isAuthRoute) return login;
+      if (isAuth && isAuthRoute) return home;
+      return null;
+    },
     routes: [
       GoRoute(
         path: login,
         name: 'login',
-        builder: (context, state) => const _PlaceholderScreen(title: 'Login'),
+        builder: (context, state) => const LoginScreen(),
       ),
       GoRoute(
         path: register,
         name: 'register',
-        builder: (context, state) =>
-            const _PlaceholderScreen(title: 'Register'),
+        builder: (context, state) => const RegisterScreen(),
       ),
       GoRoute(
         path: home,
         name: 'home',
-        builder: (context, state) => const _PlaceholderScreen(title: 'Home'),
+        builder: (context, state) => const DashboardScreen(),
       ),
       GoRoute(
         path: habitForm,
         name: 'habitForm',
-        builder: (context, state) =>
-            const _PlaceholderScreen(title: 'Habit Form'),
+        builder: (context, state) {
+          final habitId = state.uri.queryParameters['id'];
+          return HabitFormScreen(habitId: habitId);
+        },
       ),
       GoRoute(
         path: calendar,
         name: 'calendar',
-        builder: (context, state) =>
-            const _PlaceholderScreen(title: 'Calendar'),
+        builder: (context, state) => const CalendarScreen(),
       ),
       GoRoute(
         path: stats,
         name: 'stats',
-        builder: (context, state) => const _PlaceholderScreen(title: 'Stats'),
+        builder: (context, state) => const StatsScreen(),
       ),
       GoRoute(
         path: settings,
         name: 'settings',
-        builder: (context, state) =>
-            const _PlaceholderScreen(title: 'Settings'),
+        builder: (context, state) => const SettingsScreen(),
       ),
     ],
   );
-}
-
-class _PlaceholderScreen extends StatelessWidget {
-  final String title;
-
-  const _PlaceholderScreen({required this.title});
-
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(title: Text(title)),
-      body: Center(child: Text(title)),
-    );
-  }
 }
