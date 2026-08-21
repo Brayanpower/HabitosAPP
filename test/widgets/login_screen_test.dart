@@ -61,7 +61,7 @@ void main() {
 
       await tester.pump();
 
-      expect(find.text('R1DOMENSAI'), findsOneWidget);
+      expect(find.text('Habitos App'), findsOneWidget);
       expect(find.text('Construye mejores hábitos'), findsOneWidget);
       expect(find.byType(TextFormField), findsNWidgets(2));
     });

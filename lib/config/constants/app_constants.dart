@@ -1,7 +1,7 @@
 class AppConstants {
   AppConstants._();
 
-  static const String appName = 'R1DOMENSAI';
+  static const String appName = 'Habitos App';
   static const String dbName = 'habitos.db';
   static const int dbVersion = 1;
 
