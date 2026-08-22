@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
 import 'package:habitos_app/config/config.dart';
 import 'package:habitos_app/presentation/providers/auth_provider.dart';
@@ -142,6 +143,7 @@ class SettingsScreen extends StatelessWidget {
                 );
                 if (confirmed == true) {
                   await authProvider.logout();
+                  if (context.mounted) context.go(AppRoutes.login);
                 }
               },
             ),
