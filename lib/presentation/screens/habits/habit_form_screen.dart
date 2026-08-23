@@ -97,7 +97,7 @@ class _HabitFormScreenState extends State<HabitFormScreen> {
       );
       await habitProvider.updateHabit(updated);
           if (reminderDateTime != null) {
-        await NotificationHelper.scheduleNotification(
+        await NotificationHelper.scheduleAlarmNotification(
           id: updated.id.hashCode,
           title: 'Recordatorio',
           body: '¡Hora de ${updated.name}!',
@@ -122,7 +122,7 @@ class _HabitFormScreenState extends State<HabitFormScreen> {
       );
       await habitProvider.createHabit(habit);
       if (reminderDateTime != null) {
-        await NotificationHelper.scheduleNotification(
+        await NotificationHelper.scheduleAlarmNotification(
           id: habit.id.hashCode,
           title: 'Recordatorio',
           body: '¡Hora de ${habit.name}!',
