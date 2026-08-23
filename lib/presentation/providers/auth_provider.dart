@@ -8,9 +8,7 @@ class AuthProvider extends ChangeNotifier {
   final AuthRepository _authRepository;
 
   AuthProvider({required AuthRepository authRepository})
-      : _authRepository = authRepository {
-    checkAuthStatus();
-  }
+      : _authRepository = authRepository;
 
   AuthStatus _status = AuthStatus.initial;
   UserEntity? _user;
