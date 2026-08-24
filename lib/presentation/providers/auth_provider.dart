@@ -22,9 +22,6 @@ class AuthProvider extends ChangeNotifier {
   bool get registeredSuccessfully => _registeredSuccessfully;
 
   Future<void> checkAuthStatus() async {
-    _status = AuthStatus.loading;
-    notifyListeners();
-
     try {
       final isAuth = await _authRepository.isAuthenticated();
       if (isAuth) {

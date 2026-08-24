@@ -79,6 +79,20 @@ class NotificationHelper {
     );
   }
 
+  static Future<bool> requestExactAlarmPermission() async {
+    final androidPlugin = _plugin.resolvePlatformSpecificImplementation<
+        AndroidFlutterLocalNotificationsPlugin>();
+    if (androidPlugin == null) return false;
+    return await androidPlugin.requestExactAlarmsPermission() ?? false;
+  }
+
+  static Future<bool> hasExactAlarmPermission() async {
+    final androidPlugin = _plugin.resolvePlatformSpecificImplementation<
+        AndroidFlutterLocalNotificationsPlugin>();
+    if (androidPlugin == null) return false;
+    return await androidPlugin.canScheduleExactNotifications() ?? false;
+  }
+
   static Future<void> scheduleAlarmNotification({
     required int id,
     required String title,
@@ -87,6 +101,8 @@ class NotificationHelper {
   }) async {
     final location = tz.local;
     final tzDate = tz.TZDateTime.from(scheduledDate, location);
+
+    final exact = await hasExactAlarmPermission();
 
     await _plugin.zonedSchedule(
       id,
@@ -102,7 +118,9 @@ class NotificationHelper {
           interruptionLevel: InterruptionLevel.timeSensitive,
         ),
       ),
-      androidScheduleMode: AndroidScheduleMode.exactAllowWhileIdle,
+      androidScheduleMode: exact
+          ? AndroidScheduleMode.exactAllowWhileIdle
+          : AndroidScheduleMode.inexactAllowWhileIdle,
       matchDateTimeComponents: DateTimeComponents.time,
       uiLocalNotificationDateInterpretation:
           UILocalNotificationDateInterpretation.absoluteTime,
