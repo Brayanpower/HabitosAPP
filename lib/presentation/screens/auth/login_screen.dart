@@ -27,10 +27,14 @@ class _LoginScreenState extends State<LoginScreen> {
 
   Future<void> _login() async {
     if (!_formKey.currentState!.validate()) return;
-    await context.read<AuthProvider>().login(
-          _emailController.text.trim(),
-          _passwordController.text,
-        );
+    final auth = context.read<AuthProvider>();
+    await auth.login(
+      _emailController.text.trim(),
+      _passwordController.text,
+    );
+    if (auth.isAuthenticated && mounted) {
+      context.go(AppRoutes.home);
+    }
   }
 
   @override
