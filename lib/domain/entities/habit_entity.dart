@@ -48,6 +48,8 @@ class HabitEntity {
   final bool isActive;
   final int currentStreak;
   final int bestStreak;
+  final int? goalTarget;
+  final int? goalDays;
 
   HabitEntity({
     required this.id,
@@ -61,6 +63,8 @@ class HabitEntity {
     this.isActive = true,
     this.currentStreak = 0,
     this.bestStreak = 0,
+    this.goalTarget,
+    this.goalDays,
   });
 
   HabitEntity copyWith({
@@ -75,6 +79,8 @@ class HabitEntity {
     bool? isActive,
     int? currentStreak,
     int? bestStreak,
+    int? goalTarget,
+    int? goalDays,
   }) {
     return HabitEntity(
       id: id ?? this.id,
@@ -88,6 +94,8 @@ class HabitEntity {
       isActive: isActive ?? this.isActive,
       currentStreak: currentStreak ?? this.currentStreak,
       bestStreak: bestStreak ?? this.bestStreak,
+      goalTarget: goalTarget ?? this.goalTarget,
+      goalDays: goalDays ?? this.goalDays,
     );
   }
 }

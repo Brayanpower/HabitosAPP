@@ -22,6 +22,9 @@ class _HabitFormScreenState extends State<HabitFormScreen> {
   final _descriptionController = TextEditingController();
   HabitFrequency _frequency = HabitFrequency.daily;
   HabitCategory _category = HabitCategory.otro;
+  bool _hasGoal = false;
+  final _goalTargetController = TextEditingController();
+  final _goalDaysController = TextEditingController();
   TimeOfDay? _reminderTime;
   bool _isEditing = false;
   bool _isLoading = true;
@@ -46,6 +49,11 @@ class _HabitFormScreenState extends State<HabitFormScreen> {
           _descriptionController.text = habit.description ?? '';
           _frequency = habit.frequency;
           _category = habit.category;
+          if (habit.goalTarget != null) {
+            _hasGoal = true;
+            _goalTargetController.text = habit.goalTarget.toString();
+            _goalDaysController.text = (habit.goalDays ?? 30).toString();
+          }
           if (habit.reminderTime != null) {
             _reminderTime = TimeOfDay.fromDateTime(habit.reminderTime!);
           }
@@ -94,14 +102,25 @@ class _HabitFormScreenState extends State<HabitFormScreen> {
     DateTime? reminderDateTime;
     if (_reminderTime != null) {
       final now = DateTime.now();
-      reminderDateTime = DateTime(
+      var scheduled = DateTime(
         now.year,
         now.month,
         now.day,
         _reminderTime!.hour,
         _reminderTime!.minute,
       );
+      if (scheduled.isBefore(now)) {
+        scheduled = scheduled.add(const Duration(days: 1));
+      }
+      reminderDateTime = scheduled;
     }
+
+    final goalTarget = _hasGoal
+        ? int.tryParse(_goalTargetController.text.trim())
+        : null;
+    final goalDays = _hasGoal
+        ? int.tryParse(_goalDaysController.text.trim())
+        : null;
 
     if (_isEditing && widget.habitId != null) {
       final updated = habitProvider.selectedHabit!.copyWith(
@@ -111,10 +130,13 @@ class _HabitFormScreenState extends State<HabitFormScreen> {
             : _descriptionController.text.trim(),
         frequency: _frequency,
         category: _category,
+        goalTarget: goalTarget,
+        goalDays: goalDays,
         reminderTime: reminderDateTime,
       );
       await habitProvider.updateHabit(updated);
-          if (reminderDateTime != null) {
+      if (reminderDateTime != null) {
+        await NotificationHelper.requestNotificationPermission();
         await NotificationHelper.scheduleAlarmNotification(
           id: updated.id.hashCode,
           title: 'Recordatorio',
@@ -141,6 +163,7 @@ class _HabitFormScreenState extends State<HabitFormScreen> {
       );
       await habitProvider.createHabit(habit);
       if (reminderDateTime != null) {
+        await NotificationHelper.requestNotificationPermission();
         await NotificationHelper.scheduleAlarmNotification(
           id: habit.id.hashCode,
           title: 'Recordatorio',

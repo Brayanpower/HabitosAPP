@@ -45,6 +45,8 @@ class DatabaseHelper {
         is_active INTEGER NOT NULL DEFAULT 1,
         current_streak INTEGER NOT NULL DEFAULT 0,
         best_streak INTEGER NOT NULL DEFAULT 0,
+        goal_target INTEGER,
+        goal_days INTEGER,
         FOREIGN KEY (user_id) REFERENCES users(id)
       )
     ''');
@@ -66,6 +68,14 @@ class DatabaseHelper {
     if (oldVersion < 2) {
       await db.execute(
         "ALTER TABLE habits ADD COLUMN category TEXT NOT NULL DEFAULT 'otro'",
+      );
+    }
+    if (oldVersion < 3) {
+      await db.execute(
+        "ALTER TABLE habits ADD COLUMN goal_target INTEGER",
+      );
+      await db.execute(
+        "ALTER TABLE habits ADD COLUMN goal_days INTEGER",
       );
     }
   }
