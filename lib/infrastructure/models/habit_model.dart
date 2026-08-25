@@ -6,6 +6,7 @@ class HabitModel {
   final String name;
   final String? description;
   final String frequency;
+  final String category;
   final DateTime createdAt;
   final DateTime? reminderTime;
   final bool isActive;
@@ -18,6 +19,7 @@ class HabitModel {
     required this.name,
     this.description,
     this.frequency = 'daily',
+    this.category = 'otro',
     required this.createdAt,
     this.reminderTime,
     this.isActive = true,
@@ -32,6 +34,7 @@ class HabitModel {
       name: entity.name,
       description: entity.description,
       frequency: entity.frequency.name,
+      category: entity.category.name,
       createdAt: entity.createdAt,
       reminderTime: entity.reminderTime,
       isActive: entity.isActive,
@@ -47,6 +50,7 @@ class HabitModel {
       name: map['name'] as String,
       description: map['description'] as String?,
       frequency: map['frequency'] as String? ?? 'daily',
+      category: map['category'] as String? ?? 'otro',
       createdAt: DateTime.parse(map['created_at'] as String),
       reminderTime: map['reminder_time'] != null
           ? DateTime.parse(map['reminder_time'] as String)
@@ -64,6 +68,7 @@ class HabitModel {
       'name': name,
       'description': description,
       'frequency': frequency,
+      'category': category,
       'created_at': createdAt.toIso8601String(),
       'reminder_time': reminderTime?.toIso8601String(),
       'is_active': isActive ? 1 : 0,
@@ -81,6 +86,10 @@ class HabitModel {
       frequency: HabitFrequency.values.firstWhere(
         (f) => f.name == frequency,
         orElse: () => HabitFrequency.daily,
+      ),
+      category: HabitCategory.values.firstWhere(
+        (c) => c.name == category,
+        orElse: () => HabitCategory.otro,
       ),
       createdAt: createdAt,
       reminderTime: reminderTime,

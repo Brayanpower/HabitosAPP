@@ -17,6 +17,7 @@ class DatabaseHelper {
       path,
       version: AppConstants.dbVersion,
       onCreate: _onCreate,
+      onUpgrade: _onUpgrade,
     );
   }
 
@@ -38,6 +39,7 @@ class DatabaseHelper {
         name TEXT NOT NULL,
         description TEXT,
         frequency TEXT NOT NULL DEFAULT 'daily',
+        category TEXT NOT NULL DEFAULT 'otro',
         created_at TEXT NOT NULL,
         reminder_time TEXT,
         is_active INTEGER NOT NULL DEFAULT 1,
@@ -58,6 +60,14 @@ class DatabaseHelper {
         UNIQUE(habit_id, date)
       )
     ''');
+  }
+
+  static Future<void> _onUpgrade(Database db, int oldVersion, int newVersion) async {
+    if (oldVersion < 2) {
+      await db.execute(
+        "ALTER TABLE habits ADD COLUMN category TEXT NOT NULL DEFAULT 'otro'",
+      );
+    }
   }
 
   static Future<void> close() async {

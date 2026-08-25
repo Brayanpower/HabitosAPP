@@ -3,7 +3,7 @@ class AppConstants {
 
   static const String appName = 'Habitos App';
   static const String dbName = 'habitos.db';
-  static const int dbVersion = 1;
+  static const int dbVersion = 2;
 
   static const String tokenKey = 'auth_token';
   static const String userKey = 'auth_user';
