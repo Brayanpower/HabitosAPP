@@ -125,8 +125,16 @@ class NotificationHelper {
     required String body,
     required DateTime scheduledDate,
   }) async {
-    final location = tz.local;
-    final tzDate = tz.TZDateTime.from(scheduledDate, location);
+    var tzDate = tz.TZDateTime.local(
+      scheduledDate.year,
+      scheduledDate.month,
+      scheduledDate.day,
+      scheduledDate.hour,
+      scheduledDate.minute,
+    );
+    if (tzDate.isBefore(tz.TZDateTime.now(tz.local))) {
+      tzDate = tzDate.add(const Duration(days: 1));
+    }
 
     final exact = await hasExactAlarmPermission();
 
