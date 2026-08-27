@@ -3,6 +3,12 @@ import 'package:provider/provider.dart';
 import 'package:habitos_app/config/config.dart';
 import 'package:habitos_app/presentation/providers/habit_provider.dart';
 import 'package:habitos_app/presentation/widgets/weekly_chart.dart';
+import 'package:habitos_app/presentation/widgets/stats/stats_monthly_chart.dart';
+import 'package:habitos_app/presentation/widgets/stats/stats_category_donut.dart';
+import 'package:habitos_app/presentation/widgets/stats/stats_trend_chart.dart';
+import 'package:habitos_app/presentation/widgets/stats/stats_goal_progress.dart';
+import 'package:habitos_app/presentation/widgets/stats/stats_comparison_card.dart';
+import 'package:habitos_app/presentation/widgets/stats/stats_productive_day.dart';
 
 class StatsScreen extends StatefulWidget {
   const StatsScreen({super.key});
@@ -12,6 +18,67 @@ class StatsScreen extends StatefulWidget {
 }
 
 class _StatsScreenState extends State<StatsScreen> {
+  Map<DateTime, int>? _dailyCompletions;
+  Map<String, int>? _categoryData;
+  Map<DateTime, int>? _trendData;
+  Map<int, int>? _weekdayData;
+  double _currentMonthRate = 0;
+  double _previousMonthRate = 0;
+
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) => _loadAllStats());
+  }
+
+  Future<void> _loadAllStats() async {
+    final provider = context.read<HabitProvider>();
+    final now = DateTime.now();
+    final monthStart = DateTime(now.year, now.month, 1);
+    final monthEnd = DateTime(now.year, now.month + 1, 0);
+
+    final prevMonthStart = DateTime(now.year, now.month - 1, 1);
+    final prevMonthEnd = DateTime(now.year, now.month, 0);
+
+    final trendStart = monthStart.subtract(const Duration(days: 29));
+    final trendEnd = monthEnd;
+
+    final results = await Future.wait([
+      provider.getDailyCompletions(monthStart, monthEnd),
+      provider.getCompletionsByCategory(monthStart, monthEnd),
+      provider.getDailyCompletions(trendStart, trendEnd),
+      provider.getWeekdayDistribution(monthStart, monthEnd),
+      provider.getDailyCompletions(prevMonthStart, prevMonthEnd),
+    ]);
+
+    final currentDaily = results[0] as Map<DateTime, int>;
+    final category = results[1] as Map<String, int>;
+    final trend = results[2] as Map<DateTime, int>;
+    final weekday = results[3] as Map<int, int>;
+    final prevDaily = results[4] as Map<DateTime, int>;
+
+    final totalHabits = provider.totalActiveHabits;
+    final currentDays = monthEnd.day;
+    final prevDays = prevMonthEnd.day;
+
+    if (mounted) {
+      setState(() {
+        _dailyCompletions = currentDaily;
+        _categoryData = category;
+        _trendData = trend;
+        _weekdayData = weekday;
+        _currentMonthRate = currentDays > 0 && totalHabits > 0
+            ? currentDaily.values.fold(0, (a, b) => a + b) /
+                (currentDays * totalHabits)
+            : 0;
+        _previousMonthRate = prevDays > 0 && totalHabits > 0
+            ? prevDaily.values.fold(0, (a, b) => a + b) /
+                (prevDays * totalHabits)
+            : 0;
+      });
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -33,6 +100,33 @@ class _StatsScreenState extends State<StatsScreen> {
               _MetricsGrid(habitProvider: habitProvider),
               const SizedBox(height: 24),
               if (activeHabits.isNotEmpty) ...[
+                if (_dailyCompletions != null) ...[
+                  MonthlyBarChart(
+                    dailyCompletions: _dailyCompletions!,
+                    totalHabits: habitProvider.totalActiveHabits,
+                  ),
+                  const SizedBox(height: 16),
+                ],
+                if (_categoryData != null && _categoryData!.isNotEmpty) ...[
+                  CategoryDonutChart(categoryData: _categoryData!),
+                  const SizedBox(height: 16),
+                ],
+                if (_trendData != null) ...[
+                  TrendLineChart(
+                    dailyCompletions: _trendData!,
+                    totalHabits: habitProvider.totalActiveHabits,
+                  ),
+                  const SizedBox(height: 16),
+                ],
+                if (_weekdayData != null && _weekdayData!.isNotEmpty) ...[
+                  ProductiveWeekdayCard(weekdayData: _weekdayData!),
+                  const SizedBox(height: 16),
+                ],
+                MonthComparisonCard(
+                  currentMonthRate: _currentMonthRate,
+                  previousMonthRate: _previousMonthRate,
+                ),
+                const SizedBox(height: 16),
                 Text(
                   'Progreso semanal',
                   style: Theme.of(context).textTheme.titleMedium?.copyWith(
@@ -47,7 +141,9 @@ class _StatsScreenState extends State<StatsScreen> {
                     habits: activeHabits,
                   ),
                 ),
-                const SizedBox(height: 24),
+                const SizedBox(height: 16),
+                ..._buildGoalSections(habitProvider, activeHabits),
+                const SizedBox(height: 8),
                 Text(
                   'Detalle por hábito',
                   style: Theme.of(context).textTheme.titleMedium?.copyWith(
@@ -119,6 +215,45 @@ class _StatsScreenState extends State<StatsScreen> {
         },
       ),
     );
+  }
+
+  List<Widget> _buildGoalSections(
+    HabitProvider habitProvider,
+    List<dynamic> activeHabits,
+  ) {
+    final goalHabits = activeHabits
+        .where((h) => (h.goalTarget ?? 0) > 0)
+        .toList();
+    if (goalHabits.isEmpty) return [];
+
+    return [
+      Text(
+        'Progreso de metas',
+        style: Theme.of(context).textTheme.titleMedium?.copyWith(
+              fontWeight: FontWeight.bold,
+            ),
+      ),
+      const SizedBox(height: 12),
+      ...goalHabits.map((habit) {
+        return FutureBuilder<Map<String, dynamic>>(
+          future: habitProvider.getGoalProgress(habit.id),
+          builder: (context, snapshot) {
+            if (!snapshot.hasData) {
+              return const Card(
+                margin: EdgeInsets.only(bottom: 8),
+                child: ListTile(leading: CircularProgressIndicator()),
+              );
+            }
+            final data = snapshot.data!;
+            return GoalProgressCard(
+              habit: habit,
+              completed: data['completed'] as int,
+            );
+          },
+        );
+      }),
+      const SizedBox(height: 8),
+    ];
   }
 
   Future<Map<String, dynamic>> _loadHabitStats(

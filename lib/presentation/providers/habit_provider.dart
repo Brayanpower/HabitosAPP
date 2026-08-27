@@ -149,6 +149,34 @@ class HabitProvider extends ChangeNotifier {
     return count;
   }
 
+  Future<Map<DateTime, int>> getDailyCompletions(
+    DateTime start,
+    DateTime end,
+  ) async {
+    if (_userId == null) return {};
+    return _habitRepository.getDailyCompletions(_userId!, start, end);
+  }
+
+  Future<Map<String, int>> getCompletionsByCategory(
+    DateTime start,
+    DateTime end,
+  ) async {
+    if (_userId == null) return {};
+    return _habitRepository.getCompletionsByCategory(_userId!, start, end);
+  }
+
+  Future<Map<int, int>> getWeekdayDistribution(
+    DateTime start,
+    DateTime end,
+  ) async {
+    if (_userId == null) return {};
+    return _habitRepository.getWeekdayDistribution(_userId!, start, end);
+  }
+
+  Future<Map<String, dynamic>> getGoalProgress(String habitId) async {
+    return _habitRepository.getGoalProgress(habitId);
+  }
+
   void clearError() {
     _error = null;
     notifyListeners();

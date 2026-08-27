@@ -195,6 +195,119 @@ class HabitLocalDatasource implements HabitDatasource {
     return Sqflite.firstIntValue(result) ?? 0;
   }
 
+  @override
+  Future<Map<DateTime, int>> getDailyCompletions(
+    String userId,
+    DateTime start,
+    DateTime end,
+  ) async {
+    final db = await DatabaseHelper.database;
+    final maps = await db.rawQuery('''
+      SELECT hl.date, COUNT(DISTINCT hl.habit_id) as count
+      FROM habit_logs hl
+      INNER JOIN habits h ON h.id = hl.habit_id
+      WHERE h.user_id = ? AND hl.date >= ? AND hl.date <= ? AND hl.is_completed = 1
+      GROUP BY hl.date
+      ORDER BY hl.date ASC
+    ''', [
+      userId,
+      DateHelper.formatDate(start),
+      DateHelper.formatDate(end),
+    ]);
+    final result = <DateTime, int>{};
+    for (final map in maps) {
+      final date = DateTime.parse(map['date'] as String);
+      result[DateTime(date.year, date.month, date.day)] =
+          (map['count'] as int?) ?? 0;
+    }
+    return result;
+  }
+
+  @override
+  Future<Map<String, int>> getCompletionsByCategory(
+    String userId,
+    DateTime start,
+    DateTime end,
+  ) async {
+    final db = await DatabaseHelper.database;
+    final maps = await db.rawQuery('''
+      SELECT h.category, COUNT(DISTINCT hl.habit_id) as count
+      FROM habit_logs hl
+      INNER JOIN habits h ON h.id = hl.habit_id
+      WHERE h.user_id = ? AND hl.date >= ? AND hl.date <= ? AND hl.is_completed = 1
+      GROUP BY h.category
+      ORDER BY count DESC
+    ''', [
+      userId,
+      DateHelper.formatDate(start),
+      DateHelper.formatDate(end),
+    ]);
+    final result = <String, int>{};
+    for (final map in maps) {
+      result[map['category'] as String] = (map['count'] as int?) ?? 0;
+    }
+    return result;
+  }
+
+  @override
+  Future<Map<int, int>> getWeekdayDistribution(
+    String userId,
+    DateTime start,
+    DateTime end,
+  ) async {
+    final db = await DatabaseHelper.database;
+    final maps = await db.rawQuery('''
+      SELECT hl.date, COUNT(DISTINCT hl.habit_id) as count
+      FROM habit_logs hl
+      INNER JOIN habits h ON h.id = hl.habit_id
+      WHERE h.user_id = ? AND hl.date >= ? AND hl.date <= ? AND hl.is_completed = 1
+      GROUP BY hl.date
+    ''', [
+      userId,
+      DateHelper.formatDate(start),
+      DateHelper.formatDate(end),
+    ]);
+    final weekdayTotals = <int, int>{};
+    for (final map in maps) {
+      final date = DateTime.parse(map['date'] as String);
+      final wd = date.weekday;
+      weekdayTotals[wd] =
+          (weekdayTotals[wd] ?? 0) + ((map['count'] as int?) ?? 0);
+    }
+    return weekdayTotals;
+  }
+
+  @override
+  Future<Map<String, dynamic>> getGoalProgress(String habitId) async {
+    final db = await DatabaseHelper.database;
+    final habitResult = await db.query(
+      'habits',
+      where: 'id = ?',
+      whereArgs: [habitId],
+    );
+    if (habitResult.isEmpty) {
+      return {'completed': 0, 'target': 0, 'days': 0};
+    }
+    final habit = HabitModel.fromMap(habitResult.first).toEntity();
+    final target = habit.goalTarget ?? 0;
+    final days = habit.goalDays ?? 0;
+    if (target <= 0 || days <= 0) {
+      return {'completed': 0, 'target': 0, 'days': 0};
+    }
+    final end = DateTime.now();
+    final start = end.subtract(Duration(days: days - 1));
+    final count = await db.rawQuery(
+      'SELECT COUNT(*) as count FROM habit_logs WHERE habit_id = ? AND date >= ? AND date <= ? AND is_completed = 1',
+      [habitId, DateHelper.formatDate(start), DateHelper.formatDate(end)],
+    );
+    final completed = Sqflite.firstIntValue(count) ?? 0;
+    return {
+      'completed': completed,
+      'target': target,
+      'days': days,
+    };
+  }
+
   Future<void> _updateStreaks(String habitId) async {
     final db = await DatabaseHelper.database;
     final logs = await db.query(

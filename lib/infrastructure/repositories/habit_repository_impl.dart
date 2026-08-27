@@ -94,4 +94,36 @@ class HabitRepositoryImpl implements HabitRepository {
   Future<int> getTotalCompletions(String habitId) {
     return datasource.getTotalCompletions(habitId);
   }
+
+  @override
+  Future<Map<DateTime, int>> getDailyCompletions(
+    String userId,
+    DateTime start,
+    DateTime end,
+  ) {
+    return datasource.getDailyCompletions(userId, start, end);
+  }
+
+  @override
+  Future<Map<String, int>> getCompletionsByCategory(
+    String userId,
+    DateTime start,
+    DateTime end,
+  ) {
+    return datasource.getCompletionsByCategory(userId, start, end);
+  }
+
+  @override
+  Future<Map<int, int>> getWeekdayDistribution(
+    String userId,
+    DateTime start,
+    DateTime end,
+  ) {
+    return datasource.getWeekdayDistribution(userId, start, end);
+  }
+
+  @override
+  Future<Map<String, dynamic>> getGoalProgress(String habitId) {
+    return datasource.getGoalProgress(habitId);
+  }
 }

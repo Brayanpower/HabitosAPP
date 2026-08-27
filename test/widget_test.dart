@@ -71,6 +71,14 @@ class MockHabitRepository implements HabitRepository {
   Future<double> getCompletionRate(String habitId, DateTime start, DateTime end) async => 0.0;
   @override
   Future<int> getTotalCompletions(String habitId) async => 0;
+  @override
+  Future<Map<DateTime, int>> getDailyCompletions(String userId, DateTime start, DateTime end) async => {};
+  @override
+  Future<Map<String, int>> getCompletionsByCategory(String userId, DateTime start, DateTime end) async => {};
+  @override
+  Future<Map<int, int>> getWeekdayDistribution(String userId, DateTime start, DateTime end) async => {};
+  @override
+  Future<Map<String, dynamic>> getGoalProgress(String habitId) async => {};
 }
 
 void main() {

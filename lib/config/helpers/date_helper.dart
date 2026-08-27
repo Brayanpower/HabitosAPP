@@ -63,4 +63,17 @@ class DateHelper {
   static int weekNumber(DateTime date) {
     return int.parse(DateFormat('w').format(date));
   }
+
+  static String weekdayName(DateTime date) {
+    const names = ['Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb', 'Dom'];
+    return names[date.weekday - 1];
+  }
+
+  static String monthName(DateTime date) {
+    const names = [
+      'enero', 'febrero', 'marzo', 'abril', 'mayo', 'junio',
+      'julio', 'agosto', 'septiembre', 'octubre', 'noviembre', 'diciembre',
+    ];
+    return names[date.month - 1];
+  }
 }
