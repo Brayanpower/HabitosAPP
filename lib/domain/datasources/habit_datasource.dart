@@ -11,6 +11,7 @@ abstract class HabitDatasource {
   Future<void> logHabit(String habitId, DateTime date);
   Future<void> unlogHabit(String habitId, DateTime date);
   Future<bool> isHabitCompletedOnDate(String habitId, DateTime date);
+  Future<int> getCountForDate(String habitId, DateTime date);
   Future<List<HabitLogEntity>> getHabitLogs(String habitId);
   Future<List<HabitLogEntity>> getLogsByDateRange(
     String habitId,

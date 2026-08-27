@@ -5,6 +5,7 @@ import 'package:habitos_app/domain/entities/habit_entity.dart';
 class HabitTile extends StatelessWidget {
   final HabitEntity habit;
   final bool isCompleted;
+  final int count;
   final VoidCallback onToggle;
   final VoidCallback onTap;
 
@@ -12,6 +13,7 @@ class HabitTile extends StatelessWidget {
     super.key,
     required this.habit,
     required this.isCompleted,
+    this.count = 0,
     required this.onToggle,
     required this.onTap,
   });
@@ -55,11 +57,20 @@ class HabitTile extends StatelessWidget {
                     ),
                   ),
                   child: isCompleted
-                      ? const Icon(
-                          Icons.check,
-                          size: 16,
-                          color: Colors.white,
-                        )
+                      ? habit.isMultiTimes && count > 0
+                          ? Text(
+                              '$count',
+                              style: const TextStyle(
+                                color: Colors.white,
+                                fontWeight: FontWeight.bold,
+                                fontSize: 11,
+                              ),
+                            )
+                          : const Icon(
+                              Icons.check,
+                              size: 16,
+                              color: Colors.white,
+                            )
                       : null,
                 ),
               ),

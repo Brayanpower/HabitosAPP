@@ -93,6 +93,10 @@ class HabitProvider extends ChangeNotifier {
     return _habitRepository.isHabitCompletedOnDate(habitId, date);
   }
 
+  Future<int> getCountForDate(String habitId, DateTime date) async {
+    return _habitRepository.getCountForDate(habitId, date);
+  }
+
   Future<Map<DateTime, bool>> getCompletionStatus(
     String habitId,
     DateTime start,

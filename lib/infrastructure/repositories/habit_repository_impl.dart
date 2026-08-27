@@ -49,6 +49,11 @@ class HabitRepositoryImpl implements HabitRepository {
   }
 
   @override
+  Future<int> getCountForDate(String habitId, DateTime date) {
+    return datasource.getCountForDate(habitId, date);
+  }
+
+  @override
   Future<List<HabitLogEntity>> getHabitLogs(String habitId) {
     return datasource.getHabitLogs(habitId);
   }

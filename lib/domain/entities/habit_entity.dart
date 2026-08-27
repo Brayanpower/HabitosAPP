@@ -51,6 +51,7 @@ class HabitEntity {
   final int? goalTarget;
   final int? goalDays;
   final List<int> repeatDays;
+  final int timesPerDay;
 
   HabitEntity({
     required this.id,
@@ -67,9 +68,11 @@ class HabitEntity {
     this.goalTarget,
     this.goalDays,
     this.repeatDays = const [],
+    this.timesPerDay = 1,
   });
 
   bool get hasCustomDays => repeatDays.isNotEmpty;
+  bool get isMultiTimes => timesPerDay > 1;
 
   HabitEntity copyWith({
     String? id,
@@ -86,6 +89,7 @@ class HabitEntity {
     int? goalTarget,
     int? goalDays,
     List<int>? repeatDays,
+    int? timesPerDay,
   }) {
     return HabitEntity(
       id: id ?? this.id,
@@ -102,6 +106,7 @@ class HabitEntity {
       goalTarget: goalTarget ?? this.goalTarget,
       goalDays: goalDays ?? this.goalDays,
       repeatDays: repeatDays ?? this.repeatDays,
+      timesPerDay: timesPerDay ?? this.timesPerDay,
     );
   }
 }
