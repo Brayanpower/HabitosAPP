@@ -50,6 +50,7 @@ class HabitEntity {
   final int bestStreak;
   final int? goalTarget;
   final int? goalDays;
+  final List<int> repeatDays;
 
   HabitEntity({
     required this.id,
@@ -65,7 +66,10 @@ class HabitEntity {
     this.bestStreak = 0,
     this.goalTarget,
     this.goalDays,
+    this.repeatDays = const [],
   });
+
+  bool get hasCustomDays => repeatDays.isNotEmpty;
 
   HabitEntity copyWith({
     String? id,
@@ -81,6 +85,7 @@ class HabitEntity {
     int? bestStreak,
     int? goalTarget,
     int? goalDays,
+    List<int>? repeatDays,
   }) {
     return HabitEntity(
       id: id ?? this.id,
@@ -96,6 +101,7 @@ class HabitEntity {
       bestStreak: bestStreak ?? this.bestStreak,
       goalTarget: goalTarget ?? this.goalTarget,
       goalDays: goalDays ?? this.goalDays,
+      repeatDays: repeatDays ?? this.repeatDays,
     );
   }
 }

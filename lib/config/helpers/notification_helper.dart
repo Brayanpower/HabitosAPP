@@ -1,5 +1,6 @@
 import 'dart:typed_data';
 
+import 'package:flutter/foundation.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:timezone/timezone.dart' as tz;
 import 'package:timezone/data/latest.dart' as tz_data;
@@ -12,28 +13,32 @@ class NotificationHelper {
 
   static Future<void> init() async {
     if (_initialized) return;
-    tz_data.initializeTimeZones();
+    try {
+      tz_data.initializeTimeZones();
 
-    const androidSettings =
-        AndroidInitializationSettings('@mipmap/ic_launcher');
-    const iosSettings = DarwinInitializationSettings(
-      requestAlertPermission: true,
-      requestBadgePermission: true,
-      requestSoundPermission: true,
-    );
-    const initSettings = InitializationSettings(
-      android: androidSettings,
-      iOS: iosSettings,
-    );
+      const androidSettings =
+          AndroidInitializationSettings('@mipmap/ic_launcher');
+      const iosSettings = DarwinInitializationSettings(
+        requestAlertPermission: true,
+        requestBadgePermission: true,
+        requestSoundPermission: true,
+      );
+      const initSettings = InitializationSettings(
+        android: androidSettings,
+        iOS: iosSettings,
+      );
 
-    await _plugin.initialize(
-      initSettings,
-      onDidReceiveNotificationResponse: _onNotificationTap,
-    );
+      await _plugin.initialize(
+        initSettings,
+        onDidReceiveNotificationResponse: _onNotificationTap,
+      );
 
-    await _createAlarmChannel();
-    await requestNotificationPermission();
-    _initialized = true;
+      await _createAlarmChannel();
+      await requestNotificationPermission();
+      _initialized = true;
+    } catch (e) {
+      debugPrint('NotificationHelper.init error: $e');
+    }
   }
 
   static Future<void> _createAlarmChannel() async {
@@ -82,27 +87,61 @@ class NotificationHelper {
     );
   }
 
+  static Future<void> showImmediate({
+    required int id,
+    required String title,
+    required String body,
+    String? payload,
+  }) async {
+    try {
+      if (!_initialized) await init();
+      await _createAlarmChannel();
+      await _plugin.show(
+        id,
+        title,
+        body,
+        NotificationDetails(
+          android: _alarmDetails(),
+          iOS: const DarwinNotificationDetails(
+            presentAlert: true,
+            presentBadge: true,
+            presentSound: true,
+            interruptionLevel: InterruptionLevel.timeSensitive,
+          ),
+        ),
+        payload: payload,
+      );
+    } catch (e) {
+      debugPrint('showImmediate error: $e');
+    }
+  }
+
   static Future<void> showAlarmNotification({
     required int id,
     required String title,
     required String body,
     String? payload,
   }) async {
-    await _plugin.show(
-      id,
-      title,
-      body,
-      NotificationDetails(
-        android: _alarmDetails(),
-        iOS: const DarwinNotificationDetails(
-          presentAlert: true,
-          presentBadge: true,
-          presentSound: true,
-          interruptionLevel: InterruptionLevel.timeSensitive,
+    try {
+      if (!_initialized) await init();
+      await _plugin.show(
+        id,
+        title,
+        body,
+        NotificationDetails(
+          android: _alarmDetails(),
+          iOS: const DarwinNotificationDetails(
+            presentAlert: true,
+            presentBadge: true,
+            presentSound: true,
+            interruptionLevel: InterruptionLevel.timeSensitive,
+          ),
         ),
-      ),
-      payload: payload,
-    );
+        payload: payload,
+      );
+    } catch (e) {
+      debugPrint('showAlarmNotification error: $e');
+    }
   }
 
   static Future<bool> requestExactAlarmPermission() async {
@@ -125,40 +164,45 @@ class NotificationHelper {
     required String body,
     required DateTime scheduledDate,
   }) async {
-    var tzDate = tz.TZDateTime.local(
-      scheduledDate.year,
-      scheduledDate.month,
-      scheduledDate.day,
-      scheduledDate.hour,
-      scheduledDate.minute,
-    );
-    if (tzDate.isBefore(tz.TZDateTime.now(tz.local))) {
-      tzDate = tzDate.add(const Duration(days: 1));
-    }
+    try {
+      if (!_initialized) await init();
+      var tzDate = tz.TZDateTime.local(
+        scheduledDate.year,
+        scheduledDate.month,
+        scheduledDate.day,
+        scheduledDate.hour,
+        scheduledDate.minute,
+      );
+      if (tzDate.isBefore(tz.TZDateTime.now(tz.local))) {
+        tzDate = tzDate.add(const Duration(days: 1));
+      }
 
-    final exact = await hasExactAlarmPermission();
+      final exact = await hasExactAlarmPermission();
 
-    await _plugin.zonedSchedule(
-      id,
-      title,
-      body,
-      tzDate,
-      NotificationDetails(
-        android: _alarmDetails(),
-        iOS: const DarwinNotificationDetails(
-          presentAlert: true,
-          presentBadge: true,
-          presentSound: true,
-          interruptionLevel: InterruptionLevel.timeSensitive,
+      await _plugin.zonedSchedule(
+        id,
+        title,
+        body,
+        tzDate,
+        NotificationDetails(
+          android: _alarmDetails(),
+          iOS: const DarwinNotificationDetails(
+            presentAlert: true,
+            presentBadge: true,
+            presentSound: true,
+            interruptionLevel: InterruptionLevel.timeSensitive,
+          ),
         ),
-      ),
-      androidScheduleMode: exact
-          ? AndroidScheduleMode.exactAllowWhileIdle
-          : AndroidScheduleMode.inexactAllowWhileIdle,
-      matchDateTimeComponents: DateTimeComponents.time,
-      uiLocalNotificationDateInterpretation:
-          UILocalNotificationDateInterpretation.absoluteTime,
-    );
+        androidScheduleMode: exact
+            ? AndroidScheduleMode.exactAllowWhileIdle
+            : AndroidScheduleMode.inexactAllowWhileIdle,
+        matchDateTimeComponents: DateTimeComponents.time,
+        uiLocalNotificationDateInterpretation:
+            UILocalNotificationDateInterpretation.absoluteTime,
+      );
+    } catch (e) {
+      debugPrint('scheduleAlarmNotification error: $e');
+    }
   }
 
   static Future<void> cancelNotification(int id) async {

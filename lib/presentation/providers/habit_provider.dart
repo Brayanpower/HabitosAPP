@@ -132,7 +132,12 @@ class HabitProvider extends ChangeNotifier {
   }
 
   List<HabitEntity> get todaysHabits {
-    return _habits.where((h) => h.isActive).toList();
+    final today = DateTime.now().weekday;
+    return _habits.where((h) {
+      if (!h.isActive) return false;
+      if (h.hasCustomDays) return h.repeatDays.contains(today);
+      return true;
+    }).toList();
   }
 
   int get totalActiveHabits => _habits.where((h) => h.isActive).length;

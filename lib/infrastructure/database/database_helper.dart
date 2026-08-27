@@ -47,6 +47,7 @@ class DatabaseHelper {
         best_streak INTEGER NOT NULL DEFAULT 0,
         goal_target INTEGER,
         goal_days INTEGER,
+        repeat_days TEXT NOT NULL DEFAULT '',
         FOREIGN KEY (user_id) REFERENCES users(id)
       )
     ''');
@@ -79,6 +80,13 @@ class DatabaseHelper {
         );
         await db.execute(
           "ALTER TABLE habits ADD COLUMN goal_days INTEGER",
+        );
+      } catch (_) {}
+    }
+    if (oldVersion < 4) {
+      try {
+        await db.execute(
+          "ALTER TABLE habits ADD COLUMN repeat_days TEXT NOT NULL DEFAULT ''",
         );
       } catch (_) {}
     }

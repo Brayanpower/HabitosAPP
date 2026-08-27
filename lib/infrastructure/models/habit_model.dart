@@ -15,6 +15,7 @@ class HabitModel {
 
   final int? goalTarget;
   final int? goalDays;
+  final String repeatDays;
 
   HabitModel({
     required this.id,
@@ -30,6 +31,7 @@ class HabitModel {
     this.bestStreak = 0,
     this.goalTarget,
     this.goalDays,
+    this.repeatDays = '',
   });
 
   factory HabitModel.fromEntity(HabitEntity entity) {
@@ -47,6 +49,7 @@ class HabitModel {
       bestStreak: entity.bestStreak,
       goalTarget: entity.goalTarget,
       goalDays: entity.goalDays,
+      repeatDays: entity.repeatDays.join(','),
     );
   }
 
@@ -67,6 +70,7 @@ class HabitModel {
       bestStreak: map['best_streak'] as int? ?? 0,
       goalTarget: map['goal_target'] as int?,
       goalDays: map['goal_days'] as int?,
+      repeatDays: map['repeat_days'] as String? ?? '',
     );
   }
 
@@ -85,6 +89,7 @@ class HabitModel {
       'best_streak': bestStreak,
       'goal_target': goalTarget,
       'goal_days': goalDays,
+      'repeat_days': repeatDays,
     };
   }
 
@@ -109,6 +114,9 @@ class HabitModel {
       bestStreak: bestStreak,
       goalTarget: goalTarget,
       goalDays: goalDays,
+      repeatDays: repeatDays.isEmpty
+          ? []
+          : repeatDays.split(',').map((s) => int.tryParse(s.trim()) ?? 0).toList(),
     );
   }
 }

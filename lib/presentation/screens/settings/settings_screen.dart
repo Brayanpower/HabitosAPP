@@ -124,7 +124,7 @@ class SettingsScreen extends StatelessWidget {
                   onTap: () async {
                     await NotificationHelper.requestNotificationPermission();
                     final granted = await NotificationHelper.requestExactAlarmPermission();
-                    await NotificationHelper.showAlarmNotification(
+                    await NotificationHelper.showImmediate(
                       id: 999,
                       title: 'Notificación de prueba',
                       body: 'Si ves esto, las notificaciones funcionan correctamente',
