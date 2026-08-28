@@ -80,10 +80,7 @@ class NotificationHelper {
       fullScreenIntent: true,
       category: AndroidNotificationCategory.alarm,
       visibility: NotificationVisibility.public,
-      actions: <AndroidNotificationAction>[
-        AndroidNotificationAction('mark_done', 'Hecho'),
-        AndroidNotificationAction('snooze', 'Posponer'),
-      ],
+      actions: <AndroidNotificationAction>[],
     );
   }
 
