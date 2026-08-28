@@ -25,6 +25,7 @@ class _CalendarWidgetState extends State<CalendarWidget> {
   int _progressDays = 0;
   int _totalDays = 0;
   List<List<int>> _streakRuns = [];
+  int? _selectedDay;
 
   @override
   void initState() {
@@ -35,7 +36,8 @@ class _CalendarWidgetState extends State<CalendarWidget> {
   @override
   void didUpdateWidget(CalendarWidget oldWidget) {
     super.didUpdateWidget(oldWidget);
-    if (oldWidget.month != widget.month) {
+    if (oldWidget.month != widget.month ||
+        oldWidget.habits.length != widget.habits.length) {
       _loadData();
     }
   }
@@ -52,32 +54,22 @@ class _CalendarWidgetState extends State<CalendarWidget> {
     final totalHabits = <int, int>{};
 
     for (final habit in activeHabits) {
-      final status = await provider.getCompletionStatus(
-        habit.id,
-        start,
-        end,
-      );
+      final status = await provider.getCompletionStatus(habit.id, start, end);
       for (final entry in status.entries) {
         final day = entry.key.day;
         if (!_isDayAllowed(habit, entry.key.weekday)) continue;
         if (entry.value) {
-          final count = await provider.getCountForDate(
-            habit.id,
-            entry.key,
-          );
+          final count = await provider.getCountForDate(habit.id, entry.key);
           dailyStatus.putIfAbsent(day, () => {});
           dailyStatus[day]![habit.id] = count;
           counts[day] = (counts[day] ?? 0) + 1;
-          totalHabits[day] = (totalHabits[day] ?? 0);
         }
       }
     }
 
     for (final habit in activeHabits) {
       for (var day = 1; day <= daysInMonth; day++) {
-        final date = DateTime(
-          widget.month.year, widget.month.month, day,
-        );
+        final date = DateTime(widget.month.year, widget.month.month, day);
         if (_isDayAllowed(habit, date.weekday)) {
           totalHabits[day] = (totalHabits[day] ?? 0) + 1;
         }
@@ -122,15 +114,11 @@ class _CalendarWidgetState extends State<CalendarWidget> {
         current ??= [];
         current.add(day);
       } else {
-        if (current != null && current.length >= 2) {
-          runs.add(current);
-        }
+        if (current != null && current.length >= 2) runs.add(current);
         current = null;
       }
     }
-    if (current != null && current.length >= 2) {
-      runs.add(current);
-    }
+    if (current != null && current.length >= 2) runs.add(current);
     return runs;
   }
 
@@ -149,78 +137,6 @@ class _CalendarWidgetState extends State<CalendarWidget> {
     return const Color(0xFF2E7D32);
   }
 
-  void _showDayDetail(int day) {
-    final statusMap = _dailyCounts[day] ?? {};
-    showModalBottomSheet(
-      context: context,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
-      ),
-      builder: (context) {
-        final date = DateTime(
-          widget.month.year,
-          widget.month.month,
-          day,
-        );
-        final dayName = DateHelper.weekdayName(date);
-        return Padding(
-          padding: const EdgeInsets.all(20),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Center(
-                child: Container(
-                  width: 40,
-                  height: 4,
-                  decoration: BoxDecoration(
-                    color: AppTheme.textSecondary.withValues(alpha: 0.3),
-                    borderRadius: BorderRadius.circular(2),
-                  ),
-                ),
-              ),
-              const SizedBox(height: 16),
-              Text(
-                '$dayName ${date.day} de ${DateHelper.monthName(date)}',
-                style: const TextStyle(
-                  fontSize: 18,
-                  fontWeight: FontWeight.bold,
-                ),
-              ),
-              const SizedBox(height: 16),
-              ...widget.habits.where((h) => h.isActive).where((h) {
-                final date = DateTime(widget.month.year, widget.month.month, day);
-                return _isDayAllowed(h, date.weekday);
-              }).map((habit) {
-                final count = statusMap[habit.id] ?? 0;
-                final done = count > 0;
-                return ListTile(
-                  leading: Icon(
-                    done ? Icons.check_circle : Icons.cancel_outlined,
-                    color: done ? AppTheme.success : AppTheme.error,
-                    size: 28,
-                  ),
-                  title: Text(habit.name),
-                  trailing: done && habit.isMultiTimes
-                      ? Text(
-                          '×$count',
-                          style: const TextStyle(
-                            fontWeight: FontWeight.bold,
-                            color: AppTheme.primaryColor,
-                          ),
-                        )
-                      : null,
-                  dense: true,
-                );
-              }),
-              const SizedBox(height: 8),
-            ],
-          ),
-        );
-      },
-    );
-  }
-
   @override
   Widget build(BuildContext context) {
     final days = DateHelper.getCurrentMonthDays(widget.month);
@@ -228,18 +144,99 @@ class _CalendarWidgetState extends State<CalendarWidget> {
         DateTime(widget.month.year, widget.month.month, 1).weekday;
     final daysInMonth = days.length;
 
+    return Column(
+      children: [
+        Card(
+          child: Padding(
+            padding: const EdgeInsets.all(16),
+            child: Column(
+              children: [
+                _buildWeekdayHeader(context),
+                const SizedBox(height: 8),
+                _buildDaysGrid(days, firstWeekday, daysInMonth),
+                const SizedBox(height: 12),
+                _buildSummary(context),
+                const SizedBox(height: 8),
+                _buildLegend(context),
+              ],
+            ),
+          ),
+        ),
+        if (_selectedDay != null) _buildDayDetail(context),
+      ],
+    );
+  }
+
+  Widget _buildDayDetail(BuildContext context) {
+    final day = _selectedDay!;
+    final statusMap = _dailyCounts[day] ?? {};
+    final date = DateTime(widget.month.year, widget.month.month, day);
+    final dayName = DateHelper.weekdayName(date);
+
     return Card(
+      margin: const EdgeInsets.only(top: 12),
       child: Padding(
         padding: const EdgeInsets.all(16),
         child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            _buildWeekdayHeader(context),
-            const SizedBox(height: 8),
-            _buildDaysGrid(days, firstWeekday, daysInMonth),
+            Row(
+              children: [
+                Text(
+                  '$dayName ${date.day} de ${DateHelper.monthName(date)}',
+                  style: const TextStyle(
+                    fontSize: 16,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+                const Spacer(),
+                GestureDetector(
+                  onTap: () => setState(() => _selectedDay = null),
+                  child: Icon(
+                    Icons.close,
+                    size: 18,
+                    color: AppTheme.textSecondary,
+                  ),
+                ),
+              ],
+            ),
             const SizedBox(height: 12),
-            _buildSummary(context),
-            const SizedBox(height: 8),
-            _buildLegend(context),
+            ...widget.habits.where((h) => h.isActive).where((h) {
+              return _isDayAllowed(h, date.weekday);
+            }).map((habit) {
+              final count = statusMap[habit.id] ?? 0;
+              final done = count > 0;
+              return ListTile(
+                leading: Icon(
+                  done ? Icons.check_circle : Icons.cancel_outlined,
+                  color: done ? AppTheme.success : AppTheme.error,
+                  size: 28,
+                ),
+                title: Text(habit.name),
+                trailing: done && habit.isMultiTimes
+                    ? Text(
+                        '×$count',
+                        style: const TextStyle(
+                          fontWeight: FontWeight.bold,
+                          color: AppTheme.primaryColor,
+                        ),
+                      )
+                    : null,
+                dense: true,
+              );
+            }),
+            if (widget.habits.where((h) => h.isActive).where((h) {
+              return _isDayAllowed(h, date.weekday);
+            }).isEmpty)
+              Padding(
+                padding: const EdgeInsets.symmetric(vertical: 16),
+                child: Center(
+                  child: Text(
+                    'No hay hábitos este día',
+                    style: TextStyle(color: AppTheme.textSecondary),
+                  ),
+                ),
+              ),
           ],
         ),
       ),
@@ -249,35 +246,22 @@ class _CalendarWidgetState extends State<CalendarWidget> {
   Widget _buildSummary(BuildContext context) {
     return Row(
       children: [
-        Icon(
-          Icons.today,
-          size: 16,
-          color: AppTheme.textSecondary,
-        ),
+        Icon(Icons.today, size: 16, color: AppTheme.textSecondary),
         const SizedBox(width: 6),
         Text(
           '$_progressDays/$_totalDays días con progreso',
-          style: const TextStyle(
-            fontSize: 12,
-            color: AppTheme.textSecondary,
-          ),
+          style: const TextStyle(fontSize: 12, color: AppTheme.textSecondary),
         ),
         const Spacer(),
         if (_streakRuns.isNotEmpty)
           Row(
             children: [
-              Icon(
-                Icons.local_fire_department,
-                size: 16,
-                color: AppTheme.warning,
-              ),
+              Icon(Icons.local_fire_department, size: 16, color: AppTheme.warning),
               const SizedBox(width: 4),
               Text(
                 'Racha: ${_streakRuns.last.length} días',
                 style: const TextStyle(
-                  fontSize: 12,
-                  fontWeight: FontWeight.w600,
-                  color: AppTheme.warning,
+                  fontSize: 12, fontWeight: FontWeight.w600, color: AppTheme.warning,
                 ),
               ),
             ],
@@ -306,8 +290,7 @@ class _CalendarWidgetState extends State<CalendarWidget> {
         mainAxisSize: MainAxisSize.min,
         children: [
           Container(
-            width: 12,
-            height: 12,
+            width: 12, height: 12,
             decoration: BoxDecoration(
               color: color,
               borderRadius: BorderRadius.circular(2),
@@ -317,10 +300,7 @@ class _CalendarWidgetState extends State<CalendarWidget> {
             ),
           ),
           const SizedBox(width: 3),
-          Text(
-            label,
-            style: const TextStyle(fontSize: 9, color: AppTheme.textSecondary),
-          ),
+          Text(label, style: const TextStyle(fontSize: 9, color: AppTheme.textSecondary)),
         ],
       ),
     );
@@ -336,22 +316,14 @@ class _CalendarWidgetState extends State<CalendarWidget> {
           child: Text(
             day,
             textAlign: TextAlign.center,
-            style: TextStyle(
-              fontWeight: FontWeight.bold,
-              color: AppTheme.textSecondary,
-              fontSize: 12,
-            ),
+            style: TextStyle(fontWeight: FontWeight.bold, color: AppTheme.textSecondary, fontSize: 12),
           ),
         );
       }).toList(),
     );
   }
 
-  Widget _buildDaysGrid(
-    List<DateTime> days,
-    int firstWeekday,
-    int daysInMonth,
-  ) {
+  Widget _buildDaysGrid(List<DateTime> days, int firstWeekday, int daysInMonth) {
     final cells = <Widget>[];
     for (var i = 1; i < firstWeekday; i++) {
       cells.add(const SizedBox(width: 36, height: 36));
@@ -362,24 +334,30 @@ class _CalendarWidgetState extends State<CalendarWidget> {
       final ratio = _intensity[dayNum] ?? 0.0;
       final isToday = DateHelper.isToday(day);
       final inStreak = _isInStreak(dayNum);
+      final isSelected = _selectedDay == dayNum;
 
       cells.add(
         GestureDetector(
-          onTap: () => _showDayDetail(dayNum),
+          onTap: () => setState(() {
+            _selectedDay = _selectedDay == dayNum ? null : dayNum;
+          }),
           child: Container(
             width: 36,
             height: 36,
             decoration: BoxDecoration(
               shape: BoxShape.circle,
-              color: isToday ? null : _heatmapColor(ratio),
+              color: isSelected
+                  ? AppTheme.primaryColor.withValues(alpha: 0.2)
+                  : isToday
+                      ? null
+                      : _heatmapColor(ratio),
               border: isToday
                   ? Border.all(color: AppTheme.primaryColor, width: 2)
-                  : inStreak
-                      ? Border.all(
-                          color: AppTheme.warning.withValues(alpha: 0.6),
-                          width: 1.5,
-                        )
-                      : null,
+                  : isSelected
+                      ? Border.all(color: AppTheme.primaryColor, width: 1.5)
+                      : inStreak
+                          ? Border.all(color: AppTheme.warning.withValues(alpha: 0.6), width: 1.5)
+                          : null,
             ),
             child: Center(
               child: Container(
@@ -387,17 +365,14 @@ class _CalendarWidgetState extends State<CalendarWidget> {
                 height: 32,
                 decoration: BoxDecoration(
                   shape: BoxShape.circle,
-                  color: isToday
-                      ? AppTheme.primaryColor.withValues(alpha: 0.15)
-                      : null,
+                  color: isToday ? AppTheme.primaryColor.withValues(alpha: 0.15) : null,
                 ),
                 child: Center(
                   child: Text(
                     '$dayNum',
                     style: TextStyle(
                       fontSize: 12,
-                      fontWeight:
-                          isToday || (ratio > 0.5) ? FontWeight.bold : null,
+                      fontWeight: isToday || (ratio > 0.5) ? FontWeight.bold : null,
                       color: ratio > 0.5 ? Colors.white : null,
                     ),
                   ),
@@ -409,10 +384,6 @@ class _CalendarWidgetState extends State<CalendarWidget> {
       );
     }
 
-    return Wrap(
-      spacing: 0,
-      runSpacing: 4,
-      children: cells,
-    );
+    return Wrap(spacing: 0, runSpacing: 4, children: cells);
   }
 }
