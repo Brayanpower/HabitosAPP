@@ -170,7 +170,11 @@ class NotificationHelper {
         scheduledDate.hour,
         scheduledDate.minute,
       );
-      if (tzDate.isBefore(tz.TZDateTime.now(tz.local))) {
+      final now = tz.TZDateTime.now(tz.local);
+      final nowRounded = tz.TZDateTime.local(
+        now.year, now.month, now.day, now.hour, now.minute,
+      );
+      if (!tzDate.isAfter(nowRounded)) {
         tzDate = tzDate.add(const Duration(days: 1));
       }
 

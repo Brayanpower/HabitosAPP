@@ -143,14 +143,23 @@ class _HabitFormScreenState extends State<HabitFormScreen> {
       if (reminderDateTime != null) {
         await NotificationHelper.requestNotificationPermission();
         await NotificationHelper.scheduleAlarmNotification(
-          id: updated.id.hashCode,
+          id: updated.id.hashCode.abs(),
           title: 'Recordatorio',
           body: '¡Hora de ${updated.name}!',
           scheduledDate: reminderDateTime,
         );
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(
+                'Recordatorio actualizado para ${DateHelper.formatTime(reminderDateTime)}',
+              ),
+            ),
+          );
+        }
       } else {
         await NotificationHelper.cancelNotification(
-          updated.id.hashCode,
+          updated.id.hashCode.abs(),
         );
       }
     } else {
@@ -171,15 +180,27 @@ class _HabitFormScreenState extends State<HabitFormScreen> {
       if (reminderDateTime != null) {
         await NotificationHelper.requestNotificationPermission();
         await NotificationHelper.scheduleAlarmNotification(
-          id: habit.id.hashCode,
+          id: habit.id.hashCode.abs(),
           title: 'Recordatorio',
           body: '¡Hora de ${habit.name}!',
           scheduledDate: reminderDateTime,
         );
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(
+                'Recordatorio programado para ${DateHelper.formatTime(reminderDateTime)}',
+              ),
+            ),
+          );
+        }
       }
     }
 
-    if (mounted) context.pop();
+    if (mounted) {
+      await Future.delayed(const Duration(milliseconds: 300));
+      if (mounted) context.pop();
+    }
   }
 
   Future<void> _delete() async {
