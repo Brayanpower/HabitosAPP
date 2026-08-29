@@ -174,7 +174,7 @@ class NotificationHelper {
       final nowRounded = tz.TZDateTime.local(
         now.year, now.month, now.day, now.hour, now.minute,
       );
-      if (!tzDate.isAfter(nowRounded)) {
+      if (tzDate.isBefore(nowRounded)) {
         tzDate = tzDate.add(const Duration(days: 1));
       }
 
