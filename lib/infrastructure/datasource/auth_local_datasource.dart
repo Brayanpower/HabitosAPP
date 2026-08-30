@@ -53,6 +53,25 @@ class AuthLocalDatasource implements AuthDatasource {
     );
 
     await db.insert('users', UserModel.fromEntity(user).toMap());
+    await SeedHelper.seedStepHabitForUser(user.id);
+    return user;
+  }
+
+  @override
+  Future<UserEntity> updateUser(UserEntity user) async {
+    final db = await DatabaseHelper.database;
+    final model = UserModel.fromEntity(user);
+    await db.update(
+      'users',
+      model.toMap(),
+      where: 'id = ?',
+      whereArgs: [user.id],
+    );
+
+    final token = await getToken();
+    if (token != null) {
+      await saveSession(token, user);
+    }
     return user;
   }
 

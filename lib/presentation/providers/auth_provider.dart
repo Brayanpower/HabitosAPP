@@ -68,6 +68,37 @@ class AuthProvider extends ChangeNotifier {
     notifyListeners();
   }
 
+  Future<bool> updateProfile({
+    String? name,
+    String? password,
+    String? gender,
+    double? weight,
+    double? height,
+    int? age,
+  }) async {
+    if (_user == null) return false;
+    _error = null;
+    try {
+      final updatedUser = _user!.copyWith(
+        name: name,
+        password: (password != null && password.trim().isNotEmpty)
+            ? password.trim()
+            : _user!.password,
+        gender: gender,
+        weight: weight,
+        height: height,
+        age: age,
+      );
+      _user = await _authRepository.updateUser(updatedUser);
+      notifyListeners();
+      return true;
+    } catch (e) {
+      _error = e.toString().replaceFirst('Exception: ', '');
+      notifyListeners();
+      return false;
+    }
+  }
+
   void clearRegisteredFlag() {
     _registeredSuccessfully = false;
     notifyListeners();
