@@ -1,5 +1,3 @@
-import 'dart:typed_data';
-
 import 'package:flutter/foundation.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:timezone/timezone.dart' as tz;
@@ -80,7 +78,6 @@ class NotificationHelper {
       fullScreenIntent: true,
       category: AndroidNotificationCategory.alarm,
       visibility: NotificationVisibility.public,
-      actions: <AndroidNotificationAction>[],
     );
   }
 
@@ -119,26 +116,54 @@ class NotificationHelper {
     required String body,
     String? payload,
   }) async {
-    try {
-      if (!_initialized) await init();
-      await _plugin.show(
-        id,
-        title,
-        body,
-        NotificationDetails(
-          android: _alarmDetails(),
-          iOS: const DarwinNotificationDetails(
-            presentAlert: true,
-            presentBadge: true,
-            presentSound: true,
-            interruptionLevel: InterruptionLevel.timeSensitive,
-          ),
-        ),
-        payload: payload,
-      );
-    } catch (e) {
-      debugPrint('showAlarmNotification error: $e');
-    }
+    await showImmediate(id: id, title: title, body: body, payload: payload);
+  }
+
+  /// Notificación de Temporizador de Hábito Completado
+  static Future<void> showTimerCompletedNotification({
+    required String habitName,
+    required int minutes,
+  }) async {
+    await showImmediate(
+      id: 8801,
+      title: '¡Tiempo completado! ⏱️🎉',
+      body: 'Has cumplido tus $minutes minutos dedicados a "$habitName" hoy. ¡Excelente disciplina!',
+    );
+  }
+
+  /// Notificación de Meta de Agua Alcanzada
+  static Future<void> showWaterGoalReachedNotification({
+    required int targetMl,
+  }) async {
+    final liters = (targetMl / 1000).toStringAsFixed(1);
+    await showImmediate(
+      id: 8802,
+      title: '¡Meta de Hidratación Alcanzada! 💧🎉',
+      body: '¡Felicidades! Completaste tus ${liters}L ($targetMl ml) de agua del día.',
+    );
+  }
+
+  /// Notificación de Meta de Pasos Alcanzada con Sensores
+  static Future<void> showStepGoalReachedNotification({
+    required int steps,
+  }) async {
+    await showImmediate(
+      id: 8803,
+      title: '¡Meta de Pasos Diarios Alcanzada! 🚶‍♂️🌟',
+      body: '¡Increíble! Tus sensores registraron $steps pasos hoy. Has completado tu objetivo de caminata.',
+    );
+  }
+
+  /// Notificación genérica de hábito completado
+  static Future<void> showHabitCompletedNotification({
+    required String habitName,
+    String? message,
+  }) async {
+    await showImmediate(
+      id: 8804,
+      title: '¡Hábito Completado! ✨',
+      body: message ?? 'Has marcado "$habitName" como completado hoy. ¡Sigue así!',
+    );
   }
 
   static Future<bool> requestExactAlarmPermission() async {
@@ -204,6 +229,26 @@ class NotificationHelper {
     } catch (e) {
       debugPrint('scheduleAlarmNotification error: $e');
     }
+  }
+
+  static Future<void> scheduleDailyReminder({
+    required int id,
+    required String title,
+    required String body,
+    required int hour,
+    required int minute,
+  }) async {
+    final now = DateTime.now();
+    var scheduledDate = DateTime(now.year, now.month, now.day, hour, minute);
+    if (scheduledDate.isBefore(now)) {
+      scheduledDate = scheduledDate.add(const Duration(days: 1));
+    }
+    await scheduleAlarmNotification(
+      id: id,
+      title: title,
+      body: body,
+      scheduledDate: scheduledDate,
+    );
   }
 
   static Future<void> cancelNotification(int id) async {

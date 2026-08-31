@@ -20,8 +20,12 @@ class _HabitFormScreenState extends State<HabitFormScreen> {
   final _formKey = GlobalKey<FormState>();
   final _nameController = TextEditingController();
   final _descriptionController = TextEditingController();
+  final _targetValueController = TextEditingController();
+
   HabitFrequency _frequency = HabitFrequency.daily;
-  HabitCategory _category = HabitCategory.otro;
+  HabitCategory _category = HabitCategory.salud;
+  HabitTargetType _targetType = HabitTargetType.simpleCheck;
+
   bool _hasGoal = false;
   final _goalTargetController = TextEditingController();
   final _goalDaysController = TextEditingController();
@@ -50,6 +54,9 @@ class _HabitFormScreenState extends State<HabitFormScreen> {
           _descriptionController.text = habit.description ?? '';
           _frequency = habit.frequency;
           _category = habit.category;
+          _targetType = habit.targetType;
+          _targetValueController.text = habit.targetValue.toString();
+
           if (habit.goalTarget != null) {
             _hasGoal = true;
             _goalTargetController.text = habit.goalTarget.toString();
@@ -62,15 +69,43 @@ class _HabitFormScreenState extends State<HabitFormScreen> {
           _isEditing = true;
         }
       } catch (_) {}
+    } else {
+      _targetValueController.text = '1';
     }
     _isLoading = false;
     if (mounted) setState(() {});
+  }
+
+  void _onTargetTypeChanged(HabitTargetType type) {
+    setState(() {
+      _targetType = type;
+      switch (type) {
+        case HabitTargetType.timer:
+          _targetValueController.text = '20';
+          break;
+        case HabitTargetType.water:
+          _targetValueController.text = '2000';
+          break;
+        case HabitTargetType.steps:
+          _targetValueController.text = '8000';
+          break;
+        case HabitTargetType.counter:
+          _targetValueController.text = '3';
+          break;
+        case HabitTargetType.simpleCheck:
+          _targetValueController.text = '1';
+          break;
+      }
+    });
   }
 
   @override
   void dispose() {
     _nameController.dispose();
     _descriptionController.dispose();
+    _targetValueController.dispose();
+    _goalTargetController.dispose();
+    _goalDaysController.dispose();
     super.dispose();
   }
 
@@ -86,7 +121,7 @@ class _HabitFormScreenState extends State<HabitFormScreen> {
         if (!granted && mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
             const SnackBar(
-              content: Text('Ve a Ajustes > Permitir alarmas exactas para recibir notificaciones puntuales'),
+              content: Text('Permite alarmas exactas para notificaciones puntuales'),
             ),
           );
         }
@@ -118,6 +153,7 @@ class _HabitFormScreenState extends State<HabitFormScreen> {
       reminderDateTime = scheduled;
     }
 
+    final targetVal = int.tryParse(_targetValueController.text.trim()) ?? 1;
     final goalTarget = _hasGoal
         ? int.tryParse(_goalTargetController.text.trim())
         : null;
@@ -135,6 +171,9 @@ class _HabitFormScreenState extends State<HabitFormScreen> {
             : _descriptionController.text.trim(),
         frequency: _frequency,
         category: _category,
+        targetType: _targetType,
+        targetValue: targetVal,
+        unit: _targetType.defaultUnit,
         goalTarget: goalTarget,
         goalDays: goalDays,
         reminderTime: reminderDateTime,
@@ -149,19 +188,8 @@ class _HabitFormScreenState extends State<HabitFormScreen> {
           body: '¡Hora de ${updated.name}!',
           scheduledDate: reminderDateTime,
         );
-        if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text(
-                'Recordatorio actualizado para ${DateHelper.formatTime(reminderDateTime)}',
-              ),
-            ),
-          );
-        }
       } else {
-        await NotificationHelper.cancelNotification(
-          updated.id.hashCode.abs(),
-        );
+        await NotificationHelper.cancelNotification(updated.id.hashCode.abs());
       }
     } else {
       final habit = HabitEntity(
@@ -173,8 +201,13 @@ class _HabitFormScreenState extends State<HabitFormScreen> {
             : _descriptionController.text.trim(),
         frequency: _frequency,
         category: _category,
+        targetType: _targetType,
+        targetValue: targetVal,
+        unit: _targetType.defaultUnit,
         createdAt: DateTime.now(),
         reminderTime: reminderDateTime,
+        goalTarget: goalTarget,
+        goalDays: goalDays,
         repeatDays: _selectedDays.toList(),
       );
       await habitProvider.createHabit(habit);
@@ -186,20 +219,11 @@ class _HabitFormScreenState extends State<HabitFormScreen> {
           body: '¡Hora de ${habit.name}!',
           scheduledDate: reminderDateTime,
         );
-        if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text(
-                'Recordatorio programado para ${DateHelper.formatTime(reminderDateTime)}',
-              ),
-            ),
-          );
-        }
       }
     }
 
     if (mounted) {
-      await Future.delayed(const Duration(milliseconds: 300));
+      await Future.delayed(const Duration(milliseconds: 200));
       if (mounted) context.pop();
     }
   }
@@ -228,9 +252,12 @@ class _HabitFormScreenState extends State<HabitFormScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
+
     return Scaffold(
       appBar: AppBar(
-        title: Text(_isEditing ? 'Editar hábito' : 'Nuevo hábito'),
+        title: Text(_isEditing ? 'Editar Hábito' : 'Nuevo Hábito'),
       ),
       body: _isLoading
           ? const Center(child: CircularProgressIndicator())
@@ -245,12 +272,12 @@ class _HabitFormScreenState extends State<HabitFormScreen> {
                       controller: _nameController,
                       decoration: const InputDecoration(
                         labelText: 'Nombre del hábito',
-                        hintText: 'Ej: Meditar, Leer, Ejercicio...',
+                        hintText: 'Ej: Caminar, Meditar, Beber agua...',
                         prefixIcon: Icon(Icons.auto_awesome_outlined),
                       ),
                       validator: (v) {
-                        if (v == null || v.isEmpty) {
-                          return 'Ingresa un nombre';
+                        if (v == null || v.trim().isEmpty) {
+                          return 'Ingresa un nombre para el hábito';
                         }
                         return null;
                       },
@@ -260,34 +287,121 @@ class _HabitFormScreenState extends State<HabitFormScreen> {
                       controller: _descriptionController,
                       decoration: const InputDecoration(
                         labelText: 'Descripción (opcional)',
-                        hintText: '¿Por qué quieres crear este hábito?',
+                        hintText: '¿Por qué es importante este hábito para ti?',
                         prefixIcon: Icon(Icons.description_outlined),
                       ),
-                      maxLines: 3,
+                      maxLines: 2,
                     ),
                     const SizedBox(height: 24),
+
+                    // Tipo de Objetivo Inteligente
+                    Text(
+                      'Tipo de Objetivo & Medición',
+                      style: theme.textTheme.titleSmall?.copyWith(
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      'Elige cómo se registrará el cumplimiento diario.',
+                      style: TextStyle(fontSize: 12, color: AppTheme.textSecondary),
+                    ),
+                    const SizedBox(height: 12),
+                    _TargetTypeSelector(
+                      selected: _targetType,
+                      onChanged: _onTargetTypeChanged,
+                    ),
+                    const SizedBox(height: 16),
+
+                    // Campo de Valor según Tipo de Objetivo
+                    if (_targetType != HabitTargetType.simpleCheck) ...[
+                      Container(
+                        padding: const EdgeInsets.all(16),
+                        decoration: BoxDecoration(
+                          color: isDark ? AppTheme.surfaceDark : AppTheme.surfaceLight,
+                          borderRadius: BorderRadius.circular(16),
+                          border: Border.all(
+                            color: isDark ? AppTheme.borderDark : AppTheme.borderLight,
+                          ),
+                        ),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              _getTargetFieldLabel(_targetType),
+                              style: const TextStyle(
+                                fontWeight: FontWeight.bold,
+                                fontSize: 13,
+                              ),
+                            ),
+                            const SizedBox(height: 8),
+                            TextFormField(
+                              controller: _targetValueController,
+                              keyboardType: TextInputType.number,
+                              decoration: InputDecoration(
+                                suffixText: _targetType.defaultUnit,
+                                prefixIcon: Icon(_getTargetFieldIcon(_targetType)),
+                              ),
+                              validator: (v) {
+                                if (v == null || v.trim().isEmpty) return 'Ingresa un valor';
+                                final n = int.tryParse(v.trim());
+                                if (n == null || n <= 0) return 'Ingresa un número mayor a 0';
+                                return null;
+                              },
+                            ),
+                            const SizedBox(height: 6),
+                            Text(
+                              _getTargetFieldHelper(_targetType),
+                              style: const TextStyle(
+                                fontSize: 11,
+                                color: AppTheme.textSecondary,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                      const SizedBox(height: 24),
+                    ],
+
+                    // Frecuencia
                     Text(
                       'Frecuencia',
-                      style: Theme.of(context).textTheme.titleSmall?.copyWith(
-                            fontWeight: FontWeight.w600,
-                          ),
+                      style: theme.textTheme.titleSmall?.copyWith(
+                        fontWeight: FontWeight.w600,
+                      ),
                     ),
                     const SizedBox(height: 12),
                     _FrequencySelector(
                       selected: _frequency,
-                      onChanged: (f) => setState(() => _frequency = f),
+                      onChanged: (f) {
+                        setState(() {
+                          if (_frequency != f) {
+                            _frequency = f;
+                            _selectedDays.clear();
+                          }
+                        });
+                      },
                     ),
                     const SizedBox(height: 16),
-                    _DaySelector(
-                      selectedDays: _selectedDays,
-                      onChanged: (days) => setState(() => _selectedDays = days),
-                    ),
+                    if (_frequency == HabitFrequency.monthly)
+                      _MonthDaySelector(
+                        selectedDays: _selectedDays,
+                        onChanged: (days) => setState(() => _selectedDays = days),
+                      )
+                    else
+                      _DaySelector(
+                        selectedDays: _selectedDays,
+                        isWeekly: _frequency == HabitFrequency.weekly,
+                        onChanged: (days) => setState(() => _selectedDays = days),
+                      ),
                     const SizedBox(height: 24),
+
+                    // Categoría
                     Text(
                       'Categoría',
-                      style: Theme.of(context).textTheme.titleSmall?.copyWith(
-                            fontWeight: FontWeight.w600,
-                          ),
+                      style: theme.textTheme.titleSmall?.copyWith(
+                        fontWeight: FontWeight.w600,
+                      ),
                     ),
                     const SizedBox(height: 12),
                     _CategorySelector(
@@ -295,16 +409,18 @@ class _HabitFormScreenState extends State<HabitFormScreen> {
                       onChanged: (c) => setState(() => _category = c),
                     ),
                     const SizedBox(height: 24),
+
+                    // Meta (opcional)
                     Text(
-                      'Meta (opcional)',
-                      style: Theme.of(context).textTheme.titleSmall?.copyWith(
-                            fontWeight: FontWeight.w600,
-                          ),
+                      'Racha / Meta a largo plazo (opcional)',
+                      style: theme.textTheme.titleSmall?.copyWith(
+                        fontWeight: FontWeight.w600,
+                      ),
                     ),
-                    const SizedBox(height: 12),
+                    const SizedBox(height: 8),
                     CheckboxListTile(
                       contentPadding: EdgeInsets.zero,
-                      title: const Text('Establecer meta'),
+                      title: const Text('Establecer meta de días'),
                       value: _hasGoal,
                       onChanged: (v) => setState(() => _hasGoal = v ?? false),
                     ),
@@ -318,7 +434,7 @@ class _HabitFormScreenState extends State<HabitFormScreen> {
                               keyboardType: TextInputType.number,
                               decoration: const InputDecoration(
                                 labelText: 'Completar',
-                                hintText: 'Ej: 20',
+                                hintText: 'Ej: 25',
                                 prefixIcon: Icon(Icons.flag_outlined),
                               ),
                               validator: _hasGoal
@@ -359,11 +475,13 @@ class _HabitFormScreenState extends State<HabitFormScreen> {
                       ),
                     ],
                     const SizedBox(height: 24),
+
+                    // Recordatorio diario
                     Text(
-                      'Recordatorio (opcional)',
-                      style: Theme.of(context).textTheme.titleSmall?.copyWith(
-                            fontWeight: FontWeight.w600,
-                          ),
+                      'Recordatorio diario puntual',
+                      style: theme.textTheme.titleSmall?.copyWith(
+                        fontWeight: FontWeight.w600,
+                      ),
                     ),
                     const SizedBox(height: 12),
                     InkWell(
@@ -375,12 +493,10 @@ class _HabitFormScreenState extends State<HabitFormScreen> {
                           vertical: 14,
                         ),
                         decoration: BoxDecoration(
-                          color: Theme.of(context)
-                              .inputDecorationTheme
-                              .fillColor,
+                          color: theme.inputDecorationTheme.fillColor,
                           borderRadius: BorderRadius.circular(12),
                           border: Border.all(
-                            color: AppTheme.borderLight,
+                            color: isDark ? AppTheme.borderDark : AppTheme.borderLight,
                           ),
                         ),
                         child: Row(
@@ -390,7 +506,7 @@ class _HabitFormScreenState extends State<HabitFormScreen> {
                             Text(
                               _reminderTime != null
                                   ? _reminderTime!.format(context)
-                                  : 'Seleccionar hora',
+                                  : 'Seleccionar hora de notificación',
                               style: TextStyle(
                                 color: _reminderTime != null
                                     ? null
@@ -400,23 +516,31 @@ class _HabitFormScreenState extends State<HabitFormScreen> {
                             const Spacer(),
                             if (_reminderTime != null)
                               GestureDetector(
-                                onTap: () =>
-                                    setState(() => _reminderTime = null),
-                                child: const Icon(
-                                  Icons.close,
-                                  size: 18,
-                                ),
+                                onTap: () => setState(() => _reminderTime = null),
+                                child: const Icon(Icons.close, size: 18),
                               ),
                           ],
                         ),
                       ),
                     ),
                     const SizedBox(height: 32),
+
                     ElevatedButton(
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: AppTheme.primary,
+                        foregroundColor: Colors.white,
+                        padding: const EdgeInsets.symmetric(vertical: 16),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(14),
+                        ),
+                      ),
                       onPressed: _save,
                       child: Text(
-                        _isEditing ? 'Guardar cambios' : 'Crear hábito',
-                        style: const TextStyle(fontSize: 16),
+                        _isEditing ? 'Guardar Cambios' : 'Crear Hábito',
+                        style: const TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.bold,
+                        ),
                       ),
                     ),
                     if (_isEditing) ...[
@@ -426,15 +550,116 @@ class _HabitFormScreenState extends State<HabitFormScreen> {
                         style: OutlinedButton.styleFrom(
                           foregroundColor: Colors.red,
                           side: const BorderSide(color: Colors.red),
+                          padding: const EdgeInsets.symmetric(vertical: 14),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(14),
+                          ),
                         ),
                         icon: const Icon(Icons.delete_outline),
                         label: const Text('Eliminar hábito'),
                       ),
                     ],
+                    const SizedBox(height: 40),
                   ],
                 ),
               ),
             ),
+    );
+  }
+
+  String _getTargetFieldLabel(HabitTargetType type) {
+    switch (type) {
+      case HabitTargetType.timer:
+        return 'Duración diaria en minutos:';
+      case HabitTargetType.water:
+        return 'Meta diaria de hidratación (mililitros):';
+      case HabitTargetType.steps:
+        return 'Objetivo diario de pasos:';
+      case HabitTargetType.counter:
+        return 'Repeticiones deseadas por día:';
+      case HabitTargetType.simpleCheck:
+        return 'Meta';
+    }
+  }
+
+  IconData _getTargetFieldIcon(HabitTargetType type) {
+    switch (type) {
+      case HabitTargetType.timer:
+        return Icons.timer_outlined;
+      case HabitTargetType.water:
+        return Icons.water_drop_outlined;
+      case HabitTargetType.steps:
+        return Icons.directions_walk_rounded;
+      case HabitTargetType.counter:
+        return Icons.repeat_rounded;
+      case HabitTargetType.simpleCheck:
+        return Icons.check_circle_outline;
+    }
+  }
+
+  String _getTargetFieldHelper(HabitTargetType type) {
+    switch (type) {
+      case HabitTargetType.timer:
+        return 'Podrás iniciar un temporizador interactivo con cuenta regresiva para cumplirlo.';
+      case HabitTargetType.water:
+        return 'Podrás registrar cada toma rápidamente con un botón de +250ml (1 vaso).';
+      case HabitTargetType.steps:
+        return 'Se medirá automáticamente en tiempo real usando el podómetro del teléfono.';
+      case HabitTargetType.counter:
+        return 'Podrás aumentar el contador con botones + y - durante el día.';
+      case HabitTargetType.simpleCheck:
+        return '';
+    }
+  }
+}
+
+class _TargetTypeSelector extends StatelessWidget {
+  final HabitTargetType selected;
+  final ValueChanged<HabitTargetType> onChanged;
+
+  const _TargetTypeSelector({
+    required this.selected,
+    required this.onChanged,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
+
+    final options = [
+      (HabitTargetType.simpleCheck, 'Check simple', Icons.check_box_outlined),
+      (HabitTargetType.timer, 'Temporizador', Icons.timer_outlined),
+      (HabitTargetType.water, 'Agua (ml)', Icons.water_drop_outlined),
+      (HabitTargetType.steps, 'Pasos (Sensor)', Icons.directions_walk_rounded),
+      (HabitTargetType.counter, 'Contador (+/-)', Icons.plus_one_rounded),
+    ];
+
+    return Wrap(
+      spacing: 8,
+      runSpacing: 8,
+      children: options.map((opt) {
+        final isSelected = opt.$1 == selected;
+        return ChoiceChip(
+          avatar: Icon(
+            opt.$3,
+            size: 16,
+            color: isSelected ? Colors.white : AppTheme.primary,
+          ),
+          label: Text(opt.$2),
+          selected: isSelected,
+          onSelected: (_) => onChanged(opt.$1),
+          selectedColor: AppTheme.primary,
+          labelStyle: TextStyle(
+            color: isSelected
+                ? Colors.white
+                : isDark
+                    ? AppTheme.textSecondaryDark
+                    : AppTheme.textSecondaryLight,
+            fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
+          ),
+        );
+      }).toList(),
     );
   }
 }
@@ -469,14 +694,10 @@ class _FrequencySelector extends StatelessWidget {
                 duration: const Duration(milliseconds: 200),
                 padding: const EdgeInsets.symmetric(vertical: 12),
                 decoration: BoxDecoration(
-                  color: isSelected
-                      ? AppTheme.primaryColor
-                      : Colors.transparent,
+                  color: isSelected ? AppTheme.primary : Colors.transparent,
                   borderRadius: BorderRadius.circular(12),
                   border: Border.all(
-                    color: isSelected
-                        ? AppTheme.primaryColor
-                        : AppTheme.borderLight,
+                    color: isSelected ? AppTheme.primary : AppTheme.borderLight,
                   ),
                 ),
                 child: Text(
@@ -484,8 +705,7 @@ class _FrequencySelector extends StatelessWidget {
                   textAlign: TextAlign.center,
                   style: TextStyle(
                     color: isSelected ? Colors.white : null,
-                    fontWeight:
-                        isSelected ? FontWeight.w600 : FontWeight.normal,
+                    fontWeight: isSelected ? FontWeight.w600 : FontWeight.normal,
                   ),
                 ),
               ),
@@ -499,10 +719,12 @@ class _FrequencySelector extends StatelessWidget {
 
 class _DaySelector extends StatelessWidget {
   final Set<int> selectedDays;
+  final bool isWeekly;
   final ValueChanged<Set<int>> onChanged;
 
   const _DaySelector({
     required this.selectedDays,
+    this.isWeekly = false,
     required this.onChanged,
   });
 
@@ -513,17 +735,40 @@ class _DaySelector extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(
-          'Días de la semana',
-          style: Theme.of(context).textTheme.titleSmall?.copyWith(
-                fontWeight: FontWeight.w600,
+        Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            Text(
+              'Días de la semana',
+              style: Theme.of(context).textTheme.titleSmall?.copyWith(
+                    fontWeight: FontWeight.w600,
+                  ),
+            ),
+            if (isWeekly)
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                decoration: BoxDecoration(
+                  color: AppTheme.primary.withValues(alpha: 0.12),
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: Text(
+                  '${selectedDays.length}/3 días',
+                  style: const TextStyle(
+                    fontSize: 11,
+                    fontWeight: FontWeight.bold,
+                    color: AppTheme.primary,
+                  ),
+                ),
               ),
+          ],
         ),
         const SizedBox(height: 4),
         Text(
-          selectedDays.isEmpty
-              ? 'Todos los días'
-              : 'Solo los días seleccionados',
+          isWeekly
+              ? 'Selecciona hasta un máximo de 3 días a la semana'
+              : (selectedDays.isEmpty
+                  ? 'Todos los días'
+                  : 'Solo los días seleccionados'),
           style: const TextStyle(fontSize: 12, color: AppTheme.textSecondary),
         ),
         const SizedBox(height: 8),
@@ -538,6 +783,16 @@ class _DaySelector extends StatelessWidget {
                 if (isSelected) {
                   updated.remove(day);
                 } else {
+                  if (isWeekly && updated.length >= 3) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(
+                        content: Text('Los hábitos semanales permiten hasta 3 días.'),
+                        duration: Duration(seconds: 2),
+                        behavior: SnackBarBehavior.floating,
+                      ),
+                    );
+                    return;
+                  }
                   updated.add(day);
                 }
                 onChanged(updated);
@@ -548,21 +803,16 @@ class _DaySelector extends StatelessWidget {
                 height: 40,
                 decoration: BoxDecoration(
                   shape: BoxShape.circle,
-                  color: isSelected
-                      ? AppTheme.primaryColor
-                      : Colors.transparent,
+                  color: isSelected ? AppTheme.primary : Colors.transparent,
                   border: Border.all(
-                    color: isSelected
-                        ? AppTheme.primaryColor
-                        : AppTheme.borderLight,
+                    color: isSelected ? AppTheme.primary : AppTheme.borderLight,
                   ),
                 ),
                 child: Center(
                   child: Text(
                     _dayNames[i],
                     style: TextStyle(
-                      fontWeight:
-                          isSelected ? FontWeight.bold : FontWeight.normal,
+                      fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
                       color: isSelected ? Colors.white : null,
                       fontSize: 14,
                     ),
@@ -571,6 +821,131 @@ class _DaySelector extends StatelessWidget {
               ),
             );
           }),
+        ),
+      ],
+    );
+  }
+}
+
+class _MonthDaySelector extends StatelessWidget {
+  final Set<int> selectedDays;
+  final ValueChanged<Set<int>> onChanged;
+
+  const _MonthDaySelector({
+    required this.selectedDays,
+    required this.onChanged,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            Text(
+              'Días del mes',
+              style: Theme.of(context).textTheme.titleSmall?.copyWith(
+                    fontWeight: FontWeight.w600,
+                  ),
+            ),
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+              decoration: BoxDecoration(
+                color: AppTheme.primary.withValues(alpha: 0.12),
+                borderRadius: BorderRadius.circular(8),
+              ),
+              child: Text(
+                '${selectedDays.length}/3 días',
+                style: const TextStyle(
+                  fontSize: 11,
+                  fontWeight: FontWeight.bold,
+                  color: AppTheme.primary,
+                ),
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: 4),
+        const Text(
+          'Selecciona hasta 3 días específicos del mes (ej. 1, 15, 30)',
+          style: TextStyle(fontSize: 12, color: AppTheme.textSecondary),
+        ),
+        const SizedBox(height: 10),
+        Container(
+          padding: const EdgeInsets.all(12),
+          decoration: BoxDecoration(
+            color: isDark ? AppTheme.surfaceDark : AppTheme.backgroundLight,
+            borderRadius: BorderRadius.circular(16),
+            border: Border.all(
+              color: isDark ? AppTheme.borderDark : AppTheme.borderLight,
+            ),
+          ),
+          child: Wrap(
+            spacing: 6,
+            runSpacing: 6,
+            alignment: WrapAlignment.center,
+            children: List.generate(31, (i) {
+              final dayNumber = i + 1;
+              final isSelected = selectedDays.contains(dayNumber);
+
+              return GestureDetector(
+                onTap: () {
+                  final updated = Set<int>.from(selectedDays);
+                  if (isSelected) {
+                    updated.remove(dayNumber);
+                  } else {
+                    if (updated.length >= 3) {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(
+                          content: Text('Los hábitos mensuales permiten hasta 3 días.'),
+                          duration: Duration(seconds: 2),
+                          behavior: SnackBarBehavior.floating,
+                        ),
+                      );
+                      return;
+                    }
+                    updated.add(dayNumber);
+                  }
+                  onChanged(updated);
+                },
+                child: AnimatedContainer(
+                  duration: const Duration(milliseconds: 180),
+                  width: 38,
+                  height: 38,
+                  decoration: BoxDecoration(
+                    color: isSelected ? AppTheme.primary : Colors.transparent,
+                    borderRadius: BorderRadius.circular(10),
+                    border: Border.all(
+                      color: isSelected
+                          ? AppTheme.primary
+                          : isDark
+                              ? AppTheme.borderDark
+                              : AppTheme.borderLight,
+                    ),
+                  ),
+                  child: Center(
+                    child: Text(
+                      '$dayNumber',
+                      style: TextStyle(
+                        fontSize: 13,
+                        fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
+                        color: isSelected
+                            ? Colors.white
+                            : isDark
+                                ? AppTheme.textPrimaryDark
+                                : AppTheme.textPrimaryLight,
+                      ),
+                    ),
+                  ),
+                ),
+              );
+            }),
+          ),
         ),
       ],
     );

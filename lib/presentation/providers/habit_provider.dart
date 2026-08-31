@@ -1,5 +1,6 @@
 import 'package:flutter/foundation.dart';
 import 'package:habitos_app/config/helpers/date_helper.dart';
+import 'package:habitos_app/config/helpers/notification_helper.dart';
 import 'package:habitos_app/domain/entities/habit_entity.dart';
 import 'package:habitos_app/domain/entities/habit_log_entity.dart';
 import 'package:habitos_app/domain/repositories/habit_repository.dart';
@@ -74,7 +75,7 @@ class HabitProvider extends ChangeNotifier {
     }
   }
 
-  Future<void> toggleHabit(String habitId, DateTime date) async {
+  Future<void> toggleHabit(String habitId, DateTime date, {String? habitName}) async {
     final isCompleted = await _habitRepository.isHabitCompletedOnDate(
       habitId,
       date,
@@ -84,9 +85,72 @@ class HabitProvider extends ChangeNotifier {
       await _habitRepository.unlogHabit(habitId, date);
     } else {
       await _habitRepository.logHabit(habitId, date);
+      if (habitName != null && habitName.isNotEmpty) {
+        NotificationHelper.showHabitCompletedNotification(
+          habitName: habitName,
+          message: '¡Excelente! Has cumplido "$habitName".',
+        );
+      }
     }
 
     await loadHabits();
+  }
+
+  /// Completa un hábito de tipo Temporizador
+  Future<void> completeTimerHabit(
+    String habitId,
+    DateTime date, {
+    required String habitName,
+    required int minutes,
+  }) async {
+    final isCompleted = await _habitRepository.isHabitCompletedOnDate(habitId, date);
+    if (!isCompleted) {
+      await _habitRepository.logHabit(habitId, date);
+      await NotificationHelper.showTimerCompletedNotification(
+        habitName: habitName,
+        minutes: minutes,
+      );
+      await loadHabits();
+    }
+  }
+
+  /// Añade una toma de agua (+250ml o por vaso)
+  Future<void> addWaterIntake(
+    String habitId,
+    DateTime date, {
+    int amountMl = 250,
+    required int targetMl,
+    required String habitName,
+  }) async {
+    await _habitRepository.logHabit(habitId, date);
+    final count = await _habitRepository.getCountForDate(habitId, date);
+    final totalMl = count * amountMl;
+
+    if (totalMl >= targetMl) {
+      await NotificationHelper.showWaterGoalReachedNotification(targetMl: targetMl);
+    } else {
+      await NotificationHelper.showImmediate(
+        id: 8820,
+        title: '¡Vaso de agua registrado! 💧',
+        body: 'Llevas ${totalMl}ml de tu meta de ${targetMl}ml ($count vasos).',
+      );
+    }
+    await loadHabits();
+  }
+
+  /// Completa el hábito de pasos cuando el sensor alcanza la meta
+  Future<void> completeStepHabit(
+    String habitId,
+    DateTime date, {
+    required int steps,
+    required String habitName,
+  }) async {
+    final isCompleted = await _habitRepository.isHabitCompletedOnDate(habitId, date);
+    if (!isCompleted) {
+      await _habitRepository.logHabit(habitId, date);
+      await NotificationHelper.showStepGoalReachedNotification(steps: steps);
+      await loadHabits();
+    }
   }
 
   Future<bool> isCompletedOnDate(String habitId, DateTime date) async {
@@ -136,22 +200,49 @@ class HabitProvider extends ChangeNotifier {
   }
 
   List<HabitEntity> get todaysHabits {
-    final today = DateTime.now().weekday;
-    return _habits.where((h) {
-      if (!h.isActive) return false;
-      if (h.hasCustomDays) return h.repeatDays.contains(today);
-      return true;
-    }).toList();
+    final now = DateTime.now();
+    return _habits.where((h) => h.isScheduledForDate(now)).toList();
+  }
+
+  List<HabitEntity> getHabitsForDate(DateTime date) {
+    return _habits.where((h) => h.isScheduledForDate(date)).toList();
   }
 
   int get totalActiveHabits => _habits.where((h) => h.isActive).length;
   int get totalHabits => _habits.length;
+
+  int get currentOverallStreak {
+    if (_habits.isEmpty) return 0;
+    return _habits.map((h) => h.currentStreak).fold(0, (max, s) => s > max ? s : max);
+  }
+
+  int get bestOverallStreak {
+    if (_habits.isEmpty) return 0;
+    return _habits.map((h) => h.bestStreak).fold(0, (max, s) => s > max ? s : max);
+  }
+
+  Future<void> addHabitFromTemplate(dynamic template, {double? userWeight}) async {
+    if (_userId == null) return;
+    final habit = template.toEntity(_userId!, userWeight: userWeight);
+    await createHabit(habit);
+  }
 
   Future<int> getCompletedTodayCount() async {
     final today = DateHelper.today();
     int count = 0;
     for (final habit in _habits.where((h) => h.isActive)) {
       if (await _habitRepository.isHabitCompletedOnDate(habit.id, today)) {
+        count++;
+      }
+    }
+    return count;
+  }
+
+  Future<int> getCompletedOnDateCount(DateTime date) async {
+    final dayOnly = DateTime(date.year, date.month, date.day);
+    int count = 0;
+    for (final habit in getHabitsForDate(date)) {
+      if (await _habitRepository.isHabitCompletedOnDate(habit.id, dayOnly)) {
         count++;
       }
     }
