@@ -3,6 +3,7 @@ import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
 import 'package:habitos_app/config/config.dart';
 import 'package:habitos_app/presentation/providers/auth_provider.dart';
+import 'package:habitos_app/presentation/widgets/app_logo.dart';
 import 'package:habitos_app/presentation/widgets/auth_text_field.dart';
 
 class LoginScreen extends StatefulWidget {
@@ -50,28 +51,11 @@ class _LoginScreenState extends State<LoginScreen> {
                 mainAxisAlignment: MainAxisAlignment.center,
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
-                  Icon(
-                    Icons.auto_awesome_rounded,
-                    size: 64,
-                    color: AppTheme.primaryColor,
+                  const AppLogo(
+                    size: 72,
+                    subtitle: 'Construye tu mejor versión cada día',
                   ),
-                  const SizedBox(height: 16),
-                  Text(
-                    AppConstants.appName,
-                    textAlign: TextAlign.center,
-                    style: Theme.of(context).textTheme.headlineMedium?.copyWith(
-                          fontWeight: FontWeight.bold,
-                        ),
-                  ),
-                  const SizedBox(height: 8),
-                  Text(
-                    'Construye mejores hábitos',
-                    textAlign: TextAlign.center,
-                    style: Theme.of(context).textTheme.bodyLarge?.copyWith(
-                          color: AppTheme.textSecondary,
-                        ),
-                  ),
-                  const SizedBox(height: 48),
+                  const SizedBox(height: 40),
                   AuthTextField(
                     controller: _emailController,
                     label: 'Correo electrónico',

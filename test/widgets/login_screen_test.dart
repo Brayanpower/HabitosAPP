@@ -42,6 +42,9 @@ class MockAuthRepository implements AuthRepository {
 
   @override
   Future<bool> isAuthenticated() async => false;
+
+  @override
+  Future<UserEntity> updateUser(UserEntity user, {String? newPassword}) async => user;
 }
 
 void main() {
@@ -61,8 +64,7 @@ void main() {
 
       await tester.pump();
 
-      expect(find.text('Habitos App'), findsOneWidget);
-      expect(find.text('Construye mejores hábitos'), findsOneWidget);
+      expect(find.text('Construye tu mejor versión cada día'), findsOneWidget);
       expect(find.byType(TextFormField), findsNWidgets(2));
     });
 

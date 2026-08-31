@@ -3,6 +3,7 @@ import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
 import 'package:habitos_app/config/config.dart';
 import 'package:habitos_app/presentation/providers/auth_provider.dart';
+import 'package:habitos_app/presentation/widgets/app_logo.dart';
 import 'package:habitos_app/presentation/widgets/auth_text_field.dart';
 
 class RegisterScreen extends StatefulWidget {
@@ -67,28 +68,11 @@ class _RegisterScreenState extends State<RegisterScreen> {
                 mainAxisAlignment: MainAxisAlignment.center,
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
-                  Icon(
-                    Icons.auto_awesome_rounded,
+                  const AppLogo(
                     size: 64,
-                    color: AppTheme.primaryColor,
+                    subtitle: 'Crea tu cuenta y empieza hoy',
                   ),
-                  const SizedBox(height: 16),
-                  Text(
-                    'Crear cuenta',
-                    textAlign: TextAlign.center,
-                    style: Theme.of(context).textTheme.headlineMedium?.copyWith(
-                          fontWeight: FontWeight.bold,
-                        ),
-                  ),
-                  const SizedBox(height: 8),
-                  Text(
-                    'Comienza a construir mejores hábitos',
-                    textAlign: TextAlign.center,
-                    style: Theme.of(context).textTheme.bodyLarge?.copyWith(
-                          color: AppTheme.textSecondary,
-                        ),
-                  ),
-                  const SizedBox(height: 48),
+                  const SizedBox(height: 36),
                   AuthTextField(
                     controller: _nameController,
                     label: 'Nombre',
