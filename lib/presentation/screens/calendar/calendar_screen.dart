@@ -34,27 +34,30 @@ class _CalendarScreenState extends State<CalendarScreen> {
     });
   }
 
+  void _resetToCurrentMonth() {
+    setState(() {
+      _selectedMonth = DateTime.now();
+    });
+  }
+
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
+    final now = DateTime.now();
+    final isCurrentMonth =
+        _selectedMonth.year == now.year && _selectedMonth.month == now.month;
+
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Calendario'),
+        title: const Text('Calendario de Hábitos'),
         actions: [
-          IconButton(
-            icon: const Icon(Icons.arrow_back_ios_new),
-            onPressed: _previousMonth,
-          ),
-          Text(
-            DateHelper.formatMonth(_selectedMonth),
-            style: const TextStyle(
-              fontSize: 16,
-              fontWeight: FontWeight.w600,
+          if (!isCurrentMonth)
+            TextButton.icon(
+              onPressed: _resetToCurrentMonth,
+              icon: const Icon(Icons.today, size: 16),
+              label: const Text('Hoy'),
             ),
-          ),
-          IconButton(
-            icon: const Icon(Icons.arrow_forward_ios),
-            onPressed: _nextMonth,
-          ),
         ],
       ),
       body: Consumer<HabitProvider>(
@@ -63,18 +66,61 @@ class _CalendarScreenState extends State<CalendarScreen> {
             return const Center(child: CircularProgressIndicator());
           }
 
-          return ListView(
-            padding: const EdgeInsets.all(AppConstants.padding),
-            children: [
-              CalendarWidget(
-                month: _selectedMonth,
-                habits: habitProvider.habits,
-                habitProvider: habitProvider,
-              ),
-            ],
+          return RefreshIndicator(
+            onRefresh: () => habitProvider.loadHabits(),
+            child: ListView(
+              padding: const EdgeInsets.all(16),
+              children: [
+                // Header de navegación de mes
+                Container(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 8,
+                    vertical: 6,
+                  ),
+                  margin: const EdgeInsets.only(bottom: 12),
+                  decoration: BoxDecoration(
+                    color: isDark ? AppTheme.surfaceDark : AppTheme.surfaceLight,
+                    borderRadius: BorderRadius.circular(16),
+                    border: Border.all(
+                      color: isDark ? AppTheme.borderDark : AppTheme.borderLight,
+                    ),
+                  ),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      IconButton(
+                        icon: const Icon(Icons.chevron_left_rounded),
+                        onPressed: _previousMonth,
+                        tooltip: 'Mes anterior',
+                      ),
+                      Text(
+                        DateHelper.formatMonth(_selectedMonth),
+                        style: const TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                      IconButton(
+                        icon: const Icon(Icons.chevron_right_rounded),
+                        onPressed: _nextMonth,
+                        tooltip: 'Mes siguiente',
+                      ),
+                    ],
+                  ),
+                ),
+
+                CalendarWidget(
+                  month: _selectedMonth,
+                  habits: habitProvider.habits,
+                  habitProvider: habitProvider,
+                ),
+                const SizedBox(height: 24),
+              ],
+            ),
           );
         },
       ),
     );
   }
 }
+
